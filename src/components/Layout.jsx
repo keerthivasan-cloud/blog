@@ -49,9 +49,9 @@ export const Navbar = () => (
       <div className="w-10 h-10 rounded-xl flex items-center justify-center border transition-all duration-500 group-hover:rotate-[15deg] group-hover:scale-110 bg-orange-500/10 border-orange-500/20">
         <PenTool style={{ width: '1.25rem', height: '1.25rem', color: '#f97316' }} />
       </div>
-      <span className="text-xl font-black font-['Outfit'] tracking-tight">NewsForge</span>
+      <span className="text-xl font-black font-['Outfit'] tracking-tight text-slate-900 dark:text-white transition-colors duration-500">NewsForge</span>
     </Link>
-    <div className="hidden lg:flex items-center gap-10 text-xs font-black uppercase tracking-widest text-slate-400">
+    <div className="hidden lg:flex items-center gap-10 text-xs font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 transition-colors duration-500">
       <Link to="/tech" className="hover:text-primary transition-colors no-underline text-inherit">Tech</Link>
       <Link to="/business" className="hover:text-primary transition-colors no-underline text-inherit">Business</Link>
       <Link to="/finance" className="hover:text-primary transition-colors no-underline text-inherit">Finance</Link>
@@ -60,7 +60,7 @@ export const Navbar = () => (
     </div>
     <div className="flex items-center gap-3">
       <ThemeToggle />
-      <button className="p-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors border-none bg-transparent cursor-pointer text-slate-400">
+      <button className="p-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors border-none bg-transparent cursor-pointer text-slate-600 dark:text-slate-400">
         <Search style={{ width: '1.2rem', height: '1.2rem' }} />
       </button>
       <Link to="/admin" className="primary-btn no-underline text-[11px] py-3 px-6">Write</Link>
