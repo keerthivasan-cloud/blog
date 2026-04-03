@@ -1,0 +1,211 @@
+export const initialArticles = [
+  {
+    id: "1",
+    title: "The Future of AI-First Development Environments: Next Gen IDEs",
+    slug: "ai-next-gen-ide",
+    category: "Intelligence",
+    author: "Sarah Chen",
+    date: "Mar 12, 2026",
+    readTime: 8,
+    image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=2070&auto=format&fit=crop",
+    content: `Artificial Intelligence is no longer just a plug-in for our IDEs; it's becoming the IDE itself. The next generation of development environments are being built from the ground up to understand intent, not just syntax.`
+  },
+  {
+    id: "2",
+    title: "Mastering Distributed Systems: A Deep Dive into Event-Driven Architecture",
+    slug: "event-driven-architecture",
+    category: "Engineering",
+    author: "Alex Rivera",
+    date: "Mar 15, 2026",
+    readTime: 12,
+    image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop",
+    content: `As applications scale, the limitations of traditional monolithic and even synchronous microservice architectures become clear. Event-driven design is the key to true elasticity.`
+  },
+  {
+    id: "3",
+    title: "Optimizing Web Vitals: Beyond the Core Lighthouse Score",
+    slug: "web-vitals-optimization",
+    category: "Performance",
+    author: "Marcus Thorne",
+    date: "Mar 10, 2026",
+    readTime: 15,
+    image: "https://images.unsplash.com/photo-1551288049-bbbda536339a?q=80&w=2070&auto=format&fit=crop",
+    content: `While Lighthouse provides a great baseline, real-world user experience (RUM) data often tells a different story. Let's look at how to optimize for the edge cases.`
+  },
+  {
+    id: "4",
+    title: "Sustainable Business Models in the Age of automation",
+    slug: "sustainable-business-automation",
+    category: "Business",
+    author: "Jane Smith",
+    date: "Mar 20, 2026",
+    readTime: 15,
+    image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=2426&auto=format&fit=crop",
+    content: `How can businesses remain sustainable when the cost of labor is no longer the primary driver of value? We explore the new metrics of success.`
+  },
+  {
+    id: "5",
+    title: "How to Scale Your Startup From 0 to 1 Million Users",
+    slug: "scaling-startup-tips",
+    category: "Business",
+    author: "David Lee",
+    date: "Mar 18, 2026",
+    readTime: 12,
+    image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop",
+    content: `Scaling isn't just about adding more servers. It's about culture, processes, and the architecture that supports them.`
+  },
+  {
+    id: "6",
+    title: "The Rise of Edge Computing: Bringing Logic Closer to the User",
+    slug: "edge-computing-rise",
+    category: "Engineering",
+    author: "Leo Park",
+    date: "Mar 22, 2026",
+    readTime: 9,
+    image: "https://images.unsplash.com/photo-1558494949-ef010958d924?q=80&w=2070&auto=format&fit=crop",
+    content: `Edge computing is reducing latency and enabling real-time interactions that were previously impossible with traditional cloud models.`
+  },
+  {
+    id: "7",
+    title: "Cybersecurity Trends for 2026: Zero Trust is Only the Beginning",
+    slug: "cybersecurity-trends-2026",
+    category: "News",
+    author: "Emma Watson",
+    date: "Mar 24, 2026",
+    readTime: 11,
+    image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop",
+    content: `As threats become more sophisticated, our defense mechanisms must evolve. We look at the rise of AI-driven security operations.`
+  },
+  {
+    id: "8",
+    title: "The Impact of Quantum Computing on Modern Cryptography",
+    slug: "quantum-computing-cryptography",
+    category: "Intelligence",
+    author: "Dr. Elena Vance",
+    date: "Mar 26, 2026",
+    readTime: 14,
+    image: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=2070&auto=format&fit=crop",
+    content: `Quantum computers are no longer a theoretical threat. Post-quantum cryptography is becoming a standard requirement for long-term data security.`
+  },
+  {
+    id: "9",
+    title: "Remote Work 2.0: The Virtual Reality Office Space",
+    slug: "vr-remote-work",
+    category: "Business",
+    author: "Michael Scott",
+    date: "Mar 28, 2026",
+    readTime: 7,
+    image: "https://images.unsplash.com/photo-1593508512255-86ab42a8e620?q=80&w=2078&auto=format&fit=crop",
+    content: `As VR hardware becomes more accessible, the concept of a physical office is being redefined. Is the metaverse the new workplace?`
+  },
+  {
+    id: "10",
+    title: "Neural Networks: Mimicking the Human Brain",
+    slug: "neural-networks-brain",
+    category: "Intelligence",
+    author: "Alice Cooper",
+    date: "Mar 30, 2026",
+    readTime: 13,
+    image: "https://images.unsplash.com/photo-1507413245164-6160d8298b31?q=80&w=2070&auto=format&fit=crop",
+    content: `Understanding the architecture of the human brain is the ultimate blueprint for the next generation of artificial intelligence.`
+  },
+  {
+    id: "11",
+    title: "The Evolution of Smart Cities: IoT in Action",
+    slug: "iot-smart-cities",
+    category: "News",
+    author: "Rick Sanchez",
+    date: "Apr 01, 2026",
+    readTime: 10,
+    image: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?q=80&w=2070&auto=format&fit=crop",
+    content: `From traffic management to energy distribution, the Internet of Things is making our cities more efficient and livable.`
+  },
+  {
+    id: "12",
+    title: "Blockchain Beyond Crypto: Supply Chain Transparency",
+    slug: "blockchain-supply-chain",
+    category: "Business",
+    author: "Morty Smith",
+    date: "Apr 03, 2026",
+    readTime: 11,
+    image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=2064&auto=format&fit=crop",
+    content: `Blockchain technology is providing a tamper-proof record of every step in the supply chain, from raw materials to the consumer.`
+  },
+  {
+    id: "13",
+    title: "The Psychology of User Experience: Why Design Matters",
+    slug: "ux-psychology-design",
+    category: "Design",
+    author: "Joy Division",
+    date: "Apr 05, 2026",
+    readTime: 8,
+    image: "https://images.unsplash.com/photo-1586717791821-3f44a563eb4c?q=80&w=2070&auto=format&fit=crop",
+    content: `Understanding how users perceive and interact with digital products is essential for creating successful customer experiences.`
+  },
+  {
+    id: "14",
+    title: "Introduction to Serverless Computing: FaaS for Everyone",
+    slug: "serverless-computing-intro",
+    category: "Engineering",
+    author: "Elon Musk",
+    date: "Apr 07, 2026",
+    readTime: 9,
+    image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop",
+    content: `Serverless isn't about the absence of servers. It's about giving developers the freedom to focus on code, not infrastructure.`
+  },
+  {
+    id: "15",
+    title: "The Ethics of Artificial Intelligence: Navigating the Unknown",
+    slug: "ethics-of-ai",
+    category: "News",
+    author: "Sam Altman",
+    date: "Apr 09, 2026",
+    readTime: 12,
+    image: "https://images.unsplash.com/photo-1620712943543-bcc4628c9757?q=80&w=2070&auto=format&fit=crop",
+    content: `As AI becomes more integrated into our lives, the ethical implications of its decisions must be carefully considered.`
+  },
+  {
+    id: "16",
+    title: "The Shift in Global Gold Reserves: A Financial Analysis",
+    slug: "global-gold-reserves-2026",
+    category: "Finance",
+    author: "Elena Rossi",
+    date: "Apr 11, 2026",
+    readTime: 10,
+    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=2070&auto=format&fit=crop",
+    content: "Gold remains the ultimate hedge against inflation and geopolitical uncertainty. We analyze why central banks are currently increasing their reserves at record rates."
+  },
+  {
+    id: "17",
+    title: "Tech Innovation or Bubble? Examining the 2026 Market Surge",
+    slug: "tech-market-surge-2026",
+    category: "Market",
+    author: "Arthur Vance",
+    date: "Apr 13, 2026",
+    readTime: 14,
+    image: "https://images.unsplash.com/photo-1611974714652-32a392b45e9a?q=80&w=2070&auto=format&fit=crop",
+    content: "The stock market is hitting all-time highs, driven primarily by gains in the AI and biotechnology sectors. But is this growth sustainable, or are we repeating history?"
+  },
+  {
+    id: "18",
+    title: "Crude Oil in Transition: How Renewable Energy is Affecting Prices",
+    slug: "crude-oil-transition-2026",
+    category: "Commodities",
+    author: "Sarah J. Miller",
+    date: "Apr 15, 2026",
+    readTime: 12,
+    image: "https://images.unsplash.com/photo-1544006659-f0b21f04cb1d?q=80&w=2070&auto=format&fit=crop",
+    content: "As the world moves towards greener alternatives, traditional energy commodities like crude oil are facing unprecedented market pressures. Here's what's happening at OPEC+."
+  },
+  {
+    id: "19",
+    title: "The Architecture of Low-Latency Trading Engines",
+    slug: "low-latency-trading-architecture",
+    category: "Tech",
+    author: "Marcus Thorne",
+    date: "Apr 17, 2026",
+    readTime: 18,
+    image: "https://images.unsplash.com/photo-1551288049-bbbda536339a?q=80&w=2070&auto=format&fit=crop",
+    content: "In the world of high-frequency trading, every microsecond counts. We dive into the systems architecture that makes modern market matching possible."
+  }
+];
