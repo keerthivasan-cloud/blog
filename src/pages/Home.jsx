@@ -60,10 +60,37 @@ const Home = () => {
     <div className="min-h-screen bg-white dark:bg-slate-950 transition-colors duration-500 selection:bg-primary/10">
       <Navbar />
 
+      {/* NewsForge v2.0: TODAY IN 2 MINUTES (Daily Digest) */}
+      <section className="bg-slate-900 dark:bg-slate-900 border-b border-white/5 py-12 px-6">
+        <div className="max-w-[1500px] mx-auto">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-10">
+            <div className="flex-1 space-y-6">
+              <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-[9px] font-black uppercase tracking-[0.4em] text-primary">
+                <Zap className="w-3.5 h-3.5 fill-primary" /> Signature Dispatch
+              </div>
+              <h2 className="text-5xl md:text-7xl font-black font-['Outfit'] text-white leading-none -tracking-tighter uppercase mb-2">Today in <br />2 Minutes</h2>
+              <p className="text-slate-400 font-bold uppercase text-[11px] tracking-widest leading-loose">The 5 essential intelligence nodes for the industrial architect.</p>
+            </div>
+            
+            <div className="flex-[2] grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+              {articles.slice(0, 6).map((item, idx) => (
+                <Link key={item._id} to={`/${item.category.toLowerCase().replace(/\s+/g, '-')}/${item.slug}`} className="group flex items-start gap-5 no-underline">
+                  <div className="text-2xl font-black text-slate-700 font-['Outfit'] group-hover:text-primary transition-colors">0{idx+1}</div>
+                  <div className="pt-1">
+                    <h4 className="text-sm font-black text-slate-100 font-lora leading-tight uppercase transition-all group-hover:translate-x-1">{item.title}</h4>
+                    <div className="text-[8px] font-black uppercase tracking-[0.3em] text-slate-500 mt-2">{item.category} / {item.readTime}M sync</div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Hero Section - Compressed & Content Rich */}
       <section className="relative pt-12 pb-16 px-6 overflow-hidden">
         <div className="hero-glow absolute top-0 left-1/2 -translate-x-1/2 w-[120%] h-[500px] bg-orange-50/20 dark:bg-orange-500/5 rounded-full blur-[120px] pointer-events-none -z-10" />
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-[1500px] mx-auto">
            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
               <div className="lg:col-span-8">
                  {featured && (
@@ -102,8 +129,8 @@ const Home = () => {
       </section>
 
       {/* Content Engine: Latest, Trending, Categories */}
-      <section className="py-20 px-6 max-w-7xl mx-auto">
-         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+      <section className="py-12 px-6 max-w-[1500px] mx-auto">
+         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
             
             {/* MAIN CONTENT COLUMN */}
             <div className="lg:col-span-8">
@@ -122,8 +149,8 @@ const Home = () => {
                </div>
                
                {/* CATEGORY BLOCK - TECH */}
-               <div className="mt-40">
-                  <SectionHeader title="Technical Frontier" icon={Sparkles} href="/tech" />
+                <div className="mt-24">
+                   <SectionHeader title="Technical Frontier" icon={Sparkles} href="/tech" />
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                      <div className="md:col-span-2">
                         {techArticles[0] && (
@@ -144,9 +171,9 @@ const Home = () => {
                   </div>
                </div>
 
-               {/* CATEGORY BLOCK - FINANCE */}
-               <div className="mt-40">
-                  <SectionHeader title="Monetary Flow" icon={Star} href="/finance" />
+                {/* CATEGORY BLOCK - FINANCE */}
+                <div className="mt-24">
+                   <SectionHeader title="Monetary Flow" icon={Star} href="/finance" />
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                      <div className="flex flex-col gap-6">
                         {financeArticles.slice(1, 3).map(item => (
@@ -200,8 +227,8 @@ const Home = () => {
       </section>
 
       {/* INFINITE-STYLE GRID FEED */}
-      <section className="bg-slate-50/50 dark:bg-slate-900/20 py-32 px-6 border-y border-slate-100 dark:border-slate-900">
-         <div className="max-w-7xl mx-auto">
+      <section className="bg-slate-50/50 dark:bg-slate-900/20 py-24 px-6 border-y border-slate-100 dark:border-slate-900">
+         <div className="max-w-[1500px] mx-auto">
             <SectionHeader title="Continuous Intelligence" icon={Zap} />
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                {mainFeed.map((item, idx) => (

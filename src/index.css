@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400..700;1,400..700&family=Montserrat:wght@400;600;800;900&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -70,6 +70,10 @@ h1, h2, h3, h4, h5, h6 {
   font-family: 'Outfit', sans-serif;
   transition: color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+.font-lora { font-family: 'Lora', serif; }
+.font-montserrat { font-family: 'Montserrat', sans-serif; }
+
 
 .glass {
   background: rgba(255, 255, 255, 0.85);

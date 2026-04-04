@@ -11,6 +11,7 @@ import {
   Quote, Sparkles, Zap, Calendar, Clock, User, BookOpen, HelpCircle
 } from "lucide-react";
 import { BlockRenderer } from '../components/ArticlePageComponents';
+import API_BASE_URL from '../config';
 
 export default function Admin() {
   const [form, setForm] = useState({
@@ -57,7 +58,7 @@ export default function Admin() {
     
     setUploading(true);
     try {
-      const res = await axios.post("http://localhost:5001/api/upload", formData);
+      const res = await axios.post(`${API_BASE_URL}/upload`, formData);
       setForm(prev => ({ ...prev, image: res.data.url }));
     } catch (err) {
       setStatus({ type: "error", message: "IMAGE UPLOAD FAILED" });
@@ -77,7 +78,7 @@ export default function Admin() {
     setStatus({ type: null, message: "" });
     
     try {
-      await axios.post("http://localhost:5001/api/articles", form);
+      await axios.post(`${API_BASE_URL}/articles`, form);
       setStatus({ type: "success", message: `ARTICLE BROADCAST SUCCESSFUL: NODE SYNCHRONIZED.` });
       setForm({
         title: "",

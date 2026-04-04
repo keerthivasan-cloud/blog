@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { Quote, List, Type, Image as LucideImage, Sparkles, ChevronRight, BarChart2 } from 'lucide-react';
 import { motion, useScroll, useSpring } from 'framer-motion';
-import { Quote, List, Type, Image as LucideImage, Sparkles, ChevronRight } from 'lucide-react';
+import Poll from './Poll';
 
 // 1. Reading Progress Bar
 export const ReadingProgressBar = () => {
@@ -69,12 +69,12 @@ export const BlockRenderer = ({ blocks }) => {
   if (!blocks || !Array.isArray(blocks)) return null;
 
   return (
-    <div className="article-content-flow space-y-12">
+    <div className="article-content-flow space-y-10">
       {blocks.map((block, idx) => {
         switch (block.type) {
           case 'paragraph':
             return (
-              <p key={idx} className="text-xl md:text-2xl text-slate-600 dark:text-slate-400 leading-[1.9] font-medium font-['Inter']">
+              <p key={idx} className="text-xl md:text-[22px] text-slate-700 dark:text-slate-300 leading-[1.8] font-lora font-normal">
                 {block.text}
               </p>
             );
@@ -86,8 +86,8 @@ export const BlockRenderer = ({ blocks }) => {
               <HeadingTag
                 key={idx}
                 id={id}
-                className={`font-black font-['Outfit'] text-slate-900 dark:text-white tracking-tight ${
-                  block.level === 3 ? 'text-3xl mt-16 mb-6' : 'text-4xl md:text-5xl mt-24 mb-10'
+                className={`font-black font-['Outfit'] text-slate-900 dark:text-white tracking-tighter uppercase ${
+                  block.level === 3 ? 'text-2xl mt-12 mb-4' : 'text-3xl md:text-4xl mt-16 mb-8 border-l-4 border-primary pl-6'
                 }`}
               >
                 {block.text}
@@ -96,10 +96,10 @@ export const BlockRenderer = ({ blocks }) => {
 
           case 'list':
             return (
-              <ul key={idx} className="space-y-6 my-12">
+              <ul key={idx} className="space-y-4 my-8 pl-4">
                 {block.items.map((item, i) => (
-                  <li key={i} className="flex items-start gap-4 text-xl md:text-2xl text-slate-600 dark:text-slate-400 font-medium">
-                    <div className="w-2.5 h-2.5 bg-primary/20 border-2 border-primary rounded-full mt-3 flex-shrink-0" />
+                  <li key={i} className="flex items-start gap-4 text-xl md:text-[22px] text-slate-700 dark:text-slate-300 font-lora font-normal">
+                    <div className="w-2 h-2 bg-primary rounded-full mt-3.5 flex-shrink-0" />
                     <span>{item}</span>
                   </li>
                 ))}
@@ -108,9 +108,9 @@ export const BlockRenderer = ({ blocks }) => {
 
           case 'quote':
             return (
-              <blockquote key={idx} className="relative my-20 p-12 md:p-16 bg-slate-50 dark:bg-slate-900/40 rounded-[3rem] border-l-[12px] border-primary">
-                <Quote className="absolute top-8 left-8 w-16 h-16 text-primary/10 -rotate-12" />
-                <p className="relative z-10 text-3xl md:text-4xl font-black font-['Outfit'] italic text-slate-800 dark:text-white leading-tight">
+              <blockquote key={idx} className="relative my-14 p-10 md:p-14 bg-slate-50 dark:bg-slate-900/40 rounded-[2.5rem] border-l-[8px] border-primary/30">
+                <Quote className="absolute top-6 left-6 w-12 h-12 text-primary/10 -rotate-12" />
+                <p className="relative z-10 text-2xl md:text-3xl font-black font-lora italic text-slate-800 dark:text-white leading-tight">
                   "{block.text}"
                 </p>
               </blockquote>
@@ -118,15 +118,15 @@ export const BlockRenderer = ({ blocks }) => {
 
           case 'highlight':
             return (
-              <div key={idx} className="my-16 p-10 md:p-14 bg-orange-50/50 dark:bg-orange-500/5 border border-orange-100 dark:border-orange-500/20 rounded-[3.5rem] relative overflow-hidden group">
-                <Sparkles className="absolute top-[-10%] right-[-5%] w-40 h-40 text-primary/5 group-hover:scale-110 transition-transform duration-1000" />
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-orange-500/20">
-                    <Sparkles className="w-5 h-5 text-white" />
+              <div key={idx} className="my-12 p-8 md:p-10 bg-orange-50/30 dark:bg-orange-500/5 border border-orange-100 dark:border-orange-500/20 rounded-[2.5rem] relative overflow-hidden group">
+                <Sparkles className="absolute top-[-10%] right-[-5%] w-32 h-32 text-primary/5 group-hover:scale-110 transition-transform duration-1000" />
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-orange-500/10">
+                    <Sparkles className="w-4 h-4 text-white" />
                   </div>
-                  <span className="text-xs font-black uppercase tracking-[0.4em] text-primary">Technical Insight</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Core Insight</span>
                 </div>
-                <p className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-200 leading-relaxed relative z-10">
+                <p className="text-lg md:text-xl font-bold text-slate-800 dark:text-slate-200 leading-relaxed relative z-10 font-lora">
                   {block.text}
                 </p>
               </div>
@@ -134,16 +134,26 @@ export const BlockRenderer = ({ blocks }) => {
 
           case 'image':
             return (
-              <figure key={idx} className="my-20 space-y-4">
-                <div className="rounded-[4rem] overflow-hidden shadow-2xl">
-                  <img src={block.url} alt={block.alt} className="w-full object-cover max-h-[700px] hover:scale-105 transition-transform duration-[2s]" />
+              <figure key={idx} className="my-16 space-y-4">
+                <div className="rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-100 dark:border-slate-800">
+                  <img src={block.url} alt={block.alt} className="w-full object-cover max-h-[600px] hover:scale-105 transition-transform duration-[2s]" />
                 </div>
                 {block.alt && (
-                  <figcaption className="text-center text-sm font-black uppercase tracking-widest text-slate-400 dark:text-slate-600 px-10">
-                    {block.alt}
+                  <figcaption className="text-center text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 dark:text-slate-600 px-10">
+                    // Access Node: {block.alt}
                   </figcaption>
                 )}
               </figure>
+            );
+ 
+          case 'poll':
+            return (
+              <Poll 
+                key={idx}
+                pollId={`${block.question}-${idx}`}
+                question={block.question}
+                options={block.options}
+              />
             );
 
           default:

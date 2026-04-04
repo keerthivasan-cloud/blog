@@ -11,6 +11,7 @@ import {
   Copy, CheckCircle2, ChevronDown, HelpCircle, ThumbsUp, Flame, ThumbsDown
 } from 'lucide-react';
 import { ReadingProgressBar, TableOfContents, BlockRenderer } from '../components/ArticlePageComponents';
+import API_BASE_URL from '../config';
 
 const ArticleDetail = () => {
   const { slug } = useParams();
@@ -24,7 +25,7 @@ const ArticleDetail = () => {
 
   const fetchTrending = async () => {
     try {
-      const res = await axios.get('http://localhost:5001/api/articles/trending');
+      const res = await axios.get(`${API_BASE_URL}/articles/trending`);
       setTrending(res.data);
     } catch (err) {
       console.error("Trending fetch failure:", err);
@@ -33,7 +34,7 @@ const ArticleDetail = () => {
 
   const trackView = async (id) => {
     try {
-      await axios.post(`http://localhost:5001/api/articles/${id}/view`);
+      await axios.post(`${API_BASE_URL}/articles/${id}/view`);
     } catch (err) {
       console.error("View tracking failure:", err);
     }
@@ -45,12 +46,12 @@ const ArticleDetail = () => {
     
     const fetchArticle = async () => {
       try {
-        const res = await axios.get(`http://localhost:5001/api/articles/${slug}`);
+        const res = await axios.get(`${API_BASE_URL}/articles/${slug}`);
         setArticle(res.data);
         document.title = `${res.data.title} | NewsForge Intelligence`;
         trackView(res.data._id);
         
-        const relRes = await axios.get(`http://localhost:5001/api/articles?category=${res.data.category}`);
+        const relRes = await axios.get(`${API_BASE_URL}/articles?category=${res.data.category}`);
         setRelated(relRes.data.filter(a => a._id !== res.data._id).slice(0, 4));
       } catch (err) {
         console.error("Article acquisition failure:", err);
@@ -234,7 +235,7 @@ const ArticleDetail = () => {
                          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Intelligence Feedback</p>
                          <div className="flex gap-4">
                             {['like', 'insight', 'fire'].map((type) => (
-                              <button key={type} onClick={() => axios.post(`http://localhost:5001/api/articles/${article._id}/react`, { type })} className="px-6 py-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-slate-400 hover:text-primary transition-all flex items-center gap-3 text-[10px] font-black uppercase tracking-widest cursor-pointer group">
+                              <button key={type} onClick={() => axios.post(`${API_BASE_URL}/articles/${article._id}/react`, { type })} className="px-6 py-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-slate-400 hover:text-primary transition-all flex items-center gap-3 text-[10px] font-black uppercase tracking-widest cursor-pointer group">
                                 {type === 'like' && <CheckCircle className="w-4 h-4" />}
                                 {type === 'insight' && <Zap className="w-4 h-4" />}
                                 {type === 'fire' && <TrendingUp className="w-4 h-4" />}

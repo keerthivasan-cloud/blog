@@ -5,7 +5,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { 
   Plus, Edit2, Trash2, Home, LogOut, FileText, Settings, BarChart, 
   Search, Filter, ExternalLink, MoreVertical, Layout, Newspaper,
-  Users, Layers, Bell, CheckCircle, Clock, AlertCircle, Moon, Sun
+  Users, Layers, Bell, CheckCircle, Clock, AlertCircle, Moon, Sun, TrendingUp, Zap, Sparkles
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -36,6 +36,18 @@ const AdminDashboard = () => {
   const publishedCount = articles.filter(a => a.status === 'published').length;
   const draftCount = articles.filter(a => a.status === 'draft').length;
   const totalArticles = articles.length;
+  const totalViews = articles.reduce((acc, a) => acc + (a.views || 0), 0);
+
+  // NEWSFORGE v4.0 NICHE ANALYTICS
+  const categoryMetrics = categories.filter(c => c !== 'All').map(cat => {
+    const catArticles = articles.filter(a => a.category === cat);
+    const count = catArticles.length;
+    const views = catArticles.reduce((acc, a) => acc + (a.views || 0), 0);
+    const velocity = count > 0 ? (views / count).toFixed(1) : 0;
+    return { name: cat, count, views, velocity };
+  }).sort((a, b) => b.views - a.views);
+
+  const topNiche = categoryMetrics[0]?.name || 'N/A';
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex overflow-hidden font-['Inter'] text-slate-900 dark:text-white transition-colors duration-500">
@@ -116,9 +128,63 @@ const AdminDashboard = () => {
           {/* Quick Analytics Grid */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <StatCard label="Live Assets" value={publishedCount} icon={<CheckCircle className="w-6 h-6 text-green-500" />} trend="+3 this week" />
-            <StatCard label="Internal Drafts" value={draftCount} icon={<Clock className="w-6 h-6 text-orange-400" />} trend="2 pending" />
-            <StatCard label="Repository Scale" value={totalArticles} icon={<Layers className="w-6 h-6 text-slate-300 dark:text-slate-700" />} trend="High Load" />
+            <StatCard label="Total Reach" value={totalViews.toLocaleString()} icon={<Users className="w-6 h-6 text-primary" />} trend="Aggregated Views" />
+            <StatCard label="Dominant Niche" value={topNiche} icon={<TrendingUp className="w-6 h-6 text-orange-400" />} trend="High Velocity" />
             <StatCard label="Flow Cycle" value="98%" icon={<CheckCircle className="w-6 h-6 text-emerald-400" />} trend="Optimal" />
+          </div>
+
+          {/* NEWSFORGE v4.0: NICHE DOMINANCE HUB */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-12 rounded-[3.5rem] border border-slate-100 dark:border-slate-800 shadow-2xl shadow-slate-200/10">
+               <div className="flex items-center justify-between mb-12">
+                  <div>
+                    <h3 className="text-2xl font-black font-['Outfit'] -tracking-tight dark:text-white uppercase">Niche Dominance Index</h3>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-600 font-bold uppercase tracking-[0.4em] mt-2">View Velocity vs Content Volume</p>
+                  </div>
+                  <BarChart className="w-8 h-8 text-slate-100 dark:text-slate-800" />
+               </div>
+               
+               <div className="space-y-10">
+                  {categoryMetrics.map((cat, idx) => (
+                    <div key={cat.name} className="space-y-4">
+                       <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-widest">
+                          <div className="flex items-center gap-3">
+                             <span className="text-slate-300 dark:text-slate-700">0{idx+1}</span>
+                             <span className="dark:text-white">{cat.name}</span>
+                          </div>
+                          <div className="flex gap-6">
+                             <span className="text-slate-400">Vol: {cat.count}</span>
+                             <span className="text-primary">Reach: {cat.views}</span>
+                          </div>
+                       </div>
+                       <div className="h-3 w-full bg-slate-50 dark:bg-slate-850 rounded-full overflow-hidden flex">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${(cat.views / (categoryMetrics[0]?.views || 1)) * 100}%` }}
+                            transition={{ duration: 1, delay: idx * 0.1 }}
+                            className="bg-primary h-full rounded-full shadow-[0_0_15px_rgba(249,115,22,0.4)]"
+                          />
+                       </div>
+                    </div>
+                  ))}
+               </div>
+            </div>
+
+            <div className="bg-slate-900 p-12 rounded-[3.5rem] relative overflow-hidden group">
+               <Sparkles className="absolute top-[-10%] right-[-10%] w-64 h-64 text-white/5 group-hover:rotate-45 transition-transform duration-1000" />
+               <div className="relative z-10">
+                  <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center mb-8 border border-primary/20">
+                    <Zap className="w-6 h-6 text-primary fill-primary" />
+                  </div>
+                  <h3 className="text-2xl font-black font-['Outfit'] text-white uppercase mb-4">Strategic<br />Leverage</h3>
+                  <p className="text-white/40 font-bold uppercase text-[9px] tracking-[0.3em] leading-loose mb-10">
+                    Your {topNiche} content has the highest view velocity ({categoryMetrics[0]?.velocity}x). Consider increasing broadcast frequency in this partition.
+                  </p>
+                  <button className="w-full py-4 rounded-2xl bg-white text-slate-900 font-black text-[10px] uppercase tracking-widest hover:bg-primary hover:text-white transition-all cursor-pointer border-none shadow-xl">
+                    Generate Report
+                  </button>
+               </div>
+            </div>
           </div>
 
           <div className="space-y-8">

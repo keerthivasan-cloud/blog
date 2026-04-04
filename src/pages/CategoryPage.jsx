@@ -20,20 +20,20 @@ const CategoryPage = ({ category, title, description }) => {
   return (
     <div className="min-h-screen bg-slate-50/30 dark:bg-slate-950 transition-colors duration-500">
       <Navbar />
-      <main className="max-w-7xl mx-auto px-8 pt-40 pb-60">
+      <main className="max-w-[1500px] mx-auto px-8 pt-24 pb-40">
         <motion.div
            initial={{ opacity: 0, y: 20 }}
            animate={{ opacity: 1, y: 0 }}
            transition={{ duration: 0.8 }}
-           className="mb-32 text-left max-w-4xl"
+           className="mb-16 text-left max-w-5xl"
         >
-          <Link to="/" className="flex items-center gap-2 text-slate-400 hover:text-primary transition-colors mb-12 group no-underline text-xs font-black uppercase tracking-widest leading-none">
+          <Link to="/" className="flex items-center gap-2 text-slate-400 hover:text-primary transition-colors mb-12 group no-underline text-[9px] font-black uppercase tracking-[0.4em] leading-none">
              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> System Index
           </Link>
-
-          <div className="w-16 h-1.5 bg-[#f97316] mb-10 rounded-full shadow-lg shadow-orange-500/20" />
-          <h1 className="text-6xl md:text-8xl font-black mt-4 mb-8 font-['Outfit'] -tracking-tight text-slate-900 dark:text-white uppercase leading-[0.95]">{title}</h1>
-          <p className="text-2xl text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider leading-relaxed max-w-2xl">{description}</p>
+ 
+          <div className="w-12 h-1 bg-[#f97316] mb-10 rounded-full shadow-lg shadow-orange-500/20" />
+          <h1 className="text-6xl md:text-8xl font-black mt-4 mb-8 font-['Outfit'] -tracking-tighter text-slate-900 dark:text-white uppercase leading-[0.9]">{title}</h1>
+          <p className="text-xl md:text-2xl text-slate-400 dark:text-slate-500 font-medium font-lora italic leading-relaxed max-w-4xl border-l-4 border-slate-100 dark:border-slate-900 pl-8">{description}</p>
         </motion.div>
 
         {loading ? (

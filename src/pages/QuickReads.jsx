@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Navbar, Footer } from '../components/Layout';
 import { Zap, Clock, ArrowRight, BookOpen, ChevronDown } from 'lucide-react';
+import API_BASE_URL from '../config';
 
 const QuickReads = () => {
   const [articles, setArticles] = useState([]);
@@ -12,7 +13,7 @@ const QuickReads = () => {
   useEffect(() => {
     const fetchArticles = async () => {
       try {
-        const res = await axios.get('http://localhost:5001/api/articles');
+        const res = await axios.get(`${API_BASE_URL}/articles`);
         // Sort by newest first
         setArticles(res.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
       } catch (err) {

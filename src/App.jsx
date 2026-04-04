@@ -10,6 +10,7 @@ import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminEditor from './pages/AdminEditor';
 import Admin from './pages/Admin';
+import QuickReads from './pages/QuickReads';
 
 // Category Pages
 import BusinessIndex from './pages/business/index';
@@ -29,6 +30,7 @@ function App() {
           <Route path="/global-market" element={<GlobalMarketIndex />} />
           <Route path="/commodities" element={<CommoditiesIndex />} />
           <Route path="/tech" element={<TechIndex />} />
+          <Route path="/quick-reads" element={<QuickReads />} />
           
           <Route path="/:category/:slug" element={<ArticleDetail />} />
           <Route path="/about" element={<About />} />
