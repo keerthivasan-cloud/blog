@@ -160,7 +160,7 @@ const AdminDashboard = () => {
                     <AnimatePresence mode="popLayout">
                     {filteredArticles.map((article, idx) => (
                       <motion.tr 
-                        key={article.id}
+                        key={article._id || article.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: idx * 0.05 }}
@@ -194,13 +194,13 @@ const AdminDashboard = () => {
                         <td className="px-10 py-8 text-right">
                            <div className="flex items-center justify-end gap-3 translate-x-2 group-hover:translate-x-0 transition-transform opacity-40 group-hover:opacity-100">
                              <button 
-                               onClick={() => navigate(`/admin/editor/${article.id}`)}
+                               onClick={() => navigate(`/admin/editor/${article._id || article.id}`)}
                                className="p-3 rounded-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-400 hover:text-primary transition-all shadow-sm cursor-pointer"
                              >
                                <Edit2 className="w-4 h-4" />
                              </button>
                              <button 
-                               onClick={() => handleDelete(article.id)}
+                               onClick={() => handleDelete(article._id || article.id)}
                                className="p-3 rounded-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-400 hover:text-red-500 transition-all shadow-sm cursor-pointer"
                              >
                                <Trash2 className="w-4 h-4" />

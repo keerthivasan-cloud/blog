@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
 import { initialArticles } from '../data/mockArticles';
 
 const ContentContext = createContext();
@@ -38,25 +39,33 @@ export const ContentProvider = ({ children }) => {
 
   // Initialize articles and user from localStorage
   useEffect(() => {
-    const savedArticles = localStorage.getItem('newsforge_articles_v2');
-    if (savedArticles) {
-      setArticles(JSON.parse(savedArticles));
-    } else {
-      const enhancedArticles = initialArticles.map(art => ({
-        ...art,
-        status: 'published',
-        excerpt: art.content.substring(0, 150) + '...',
-        tags: [art.category, 'NewsForge']
-      }));
-      setArticles(enhancedArticles);
-      localStorage.setItem('newsforge_articles_v2', JSON.stringify(enhancedArticles));
-    }
+    const fetchArticles = async () => {
+      try {
+        const res = await axios.get('http://localhost:5000/api/articles');
+        setArticles(res.data);
+      } catch (error) {
+        console.error("Backend Synchronization Failure", error);
+        // Fallback to mock if backend is down? 
+        // For now, just log.
+      }
+    };
+
+    fetchArticles();
 
     const savedUser = localStorage.getItem('newsforge_user');
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
   }, []);
+
+  const deleteArticle = async (id) => {
+    try {
+      await axios.delete(`http://localhost:5000/api/articles/${id}`);
+      setArticles(prev => prev.filter(a => a._id !== id));
+    } catch (error) {
+      console.error("Archive Purge Failure", error);
+    }
+  };
 
   const login = (username, password) => {
     if (username === 'admin' && password === 'admin123') {
@@ -79,6 +88,7 @@ export const ContentProvider = ({ children }) => {
       user,
       login,
       logout,
+      deleteArticle,
       darkMode,
       toggleTheme
     }}>
