@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Navbar, Footer } from "../components/Layout";
 import { motion, AnimatePresence } from "framer-motion";
@@ -7,7 +8,7 @@ import {
   CheckCircle2, AlertCircle, Loader2, Image as ImageIcon, 
   PenTool, Eye, FileEdit, Globe, Plus, Trash2, 
   ChevronUp, ChevronDown, Type, AlignLeft, List as ListIcon, 
-  Quote, Sparkles, Zap, Calendar, Clock, User
+  Quote, Sparkles, Zap, Calendar, Clock, User, BookOpen, HelpCircle
 } from "lucide-react";
 import { BlockRenderer } from '../components/ArticlePageComponents';
 
@@ -17,7 +18,10 @@ export default function Admin() {
     slug: "",
     category: "Tech",
     content: [],
-    author: "Admin Staff", 
+    keyInsight: "",
+    bullets: ["", "", ""],
+    eli5: "",
+    author: "vynexsol Intelligence", 
     image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop", 
     readTime: "5",
     status: "published",
@@ -25,6 +29,8 @@ export default function Admin() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
   const [status, setStatus] = useState({ type: null, message: "" });
   const [activeTab, setActiveTab] = useState('Write');
 
@@ -37,11 +43,28 @@ export default function Admin() {
       .trim();
 
   useEffect(() => {
-    // Only auto-generate if the slug is empty OR matched the previous title-based generation
     if (form.title && !form.slug) {
       setForm(prev => ({ ...prev, slug: generateSlug(prev.title) }));
     }
   }, [form.title]);
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const formData = new FormData();
+    formData.append("image", file);
+    
+    setUploading(true);
+    try {
+      const res = await axios.post("http://localhost:5001/api/upload", formData);
+      setForm(prev => ({ ...prev, image: res.data.url }));
+    } catch (err) {
+      setStatus({ type: "error", message: "IMAGE UPLOAD FAILED" });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -54,15 +77,17 @@ export default function Admin() {
     setStatus({ type: null, message: "" });
     
     try {
-      await axios.post("http://localhost:5000/api/articles", form);
+      await axios.post("http://localhost:5001/api/articles", form);
       setStatus({ type: "success", message: `ARTICLE BROADCAST SUCCESSFUL: NODE SYNCHRONIZED.` });
-      // Reset form
       setForm({
         title: "",
         slug: "",
         category: "Tech",
         content: [],
-        author: "Admin Staff",
+        keyInsight: "",
+        bullets: ["", "", ""],
+        eli5: "",
+        author: "vynexsol Intelligence",
         image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop",
         readTime: "5",
         status: "published",
@@ -76,7 +101,6 @@ export default function Admin() {
     }
   };
 
-  // --- BLOCK MANAGEMENT ---
   const addBlock = (type) => {
     const newBlock = { type };
     if (type === 'paragraph' || type === 'quote' || type === 'highlight') newBlock.text = '';
@@ -123,6 +147,16 @@ export default function Admin() {
     });
   };
 
+  const QuickBlock = ({ icon, onClick }) => (
+    <button type="button" onClick={onClick} className="p-4 bg-slate-100 dark:bg-slate-800 rounded-2xl text-slate-400 hover:text-primary hover:bg-primary/5 transition-all border-none cursor-pointer">{icon}</button>
+  );
+
+  const ActionButton = ({ icon, label, onClick }) => (
+    <button type="button" onClick={onClick} className="px-8 py-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 hover:border-primary transition-all cursor-pointer">
+      {icon} {label}
+    </button>
+  );
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-500 font-['Inter']">
       <Navbar />
@@ -130,7 +164,6 @@ export default function Admin() {
       <main className="max-w-[1600px] mx-auto px-6 py-20">
         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
           
-          {/* Header & Controls */}
           <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-10 mb-16 text-left">
             <div className="flex items-center gap-8">
               <div className="w-20 h-20 rounded-[2.5rem] bg-primary/10 flex items-center justify-center border border-primary/20 shadow-xl shadow-orange-500/5 transition-all hover:rotate-12 group">
@@ -166,10 +199,8 @@ export default function Admin() {
 
           <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-12">
             
-            {/* Editor Side */}
             <div className={`lg:col-span-8 space-y-12 transition-all duration-700 ${activeTab === 'Preview' ? 'opacity-30 blur-sm pointer-events-none grayscale' : ''}`}>
                
-               {/* 1. Core Metadata Box */}
                <div className="bg-white dark:bg-slate-900 p-12 md:p-16 rounded-[4rem] border border-slate-100 dark:border-slate-800 shadow-2xl shadow-slate-200/20 dark:shadow-none space-y-12 transition-colors duration-500">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-12 text-left">
                     <div className="space-y-6">
@@ -184,6 +215,33 @@ export default function Admin() {
                         value={form.title}
                         onChange={(e) => setForm({ ...form, title: e.target.value })}
                       />
+                      <div className="space-y-4">
+                        <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Hero Intelligence Asset (Image URL or Local Upload)</label>
+                        <div className="flex gap-4">
+                          <input
+                            type="text"
+                            className="flex-1 bg-slate-100 dark:bg-slate-800 border-none rounded-2xl p-5 text-sm font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all font-['Inter']"
+                            placeholder="https://images.unsplash.com/..."
+                            value={form.image}
+                            onChange={(e) => setForm({ ...form, image: e.target.value })}
+                          />
+                          <input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            className="hidden" 
+                            accept="image/*"
+                            onChange={handleImageUpload} 
+                          />
+                          <button 
+                            type="button"
+                            disabled={uploading}
+                            onClick={() => fileInputRef.current.click()}
+                            className="px-8 bg-slate-100 dark:bg-slate-800 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-all border-none cursor-pointer flex items-center gap-3 whitespace-nowrap"
+                          >
+                            {uploading ? "Uploading..." : "Upload Asset"}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                     <div className="space-y-6">
                       <label className="text-[10px] font-black uppercase tracking-[0.4em] text-primary flex items-center gap-3 ml-4">
@@ -200,6 +258,59 @@ export default function Admin() {
                       <p className="pl-4 text-[9px] font-bold text-slate-300 dark:text-slate-700 uppercase tracking-widest">
                         Permanent URI: /{form.category.toLowerCase()}/<span className="text-primary">{form.slug || 'node-name'}</span>
                       </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-12 pt-12 border-t-4 border-slate-100 dark:border-slate-900 grid grid-cols-1 md:grid-cols-2 gap-12">
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-3">
+                         <Zap className="w-5 h-5 text-primary fill-primary" />
+                         <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Strategic Insight (USP)</label>
+                      </div>
+                      <textarea 
+                        value={form.keyInsight}
+                        onChange={(e) => setForm({ ...form, keyInsight: e.target.value })}
+                        placeholder="What is the one sharp insight the reader must take away?"
+                        className="w-full bg-slate-100 dark:bg-slate-800 p-8 rounded-[3rem] border-none text-xl font-bold font-lora text-slate-800 dark:text-white outline-none focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-700 min-h-[200px] leading-relaxed italic"
+                      />
+                    </div>
+
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-3">
+                         <BookOpen className="w-5 h-5 text-primary" />
+                         <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">30s Summary Mode (Bullets)</label>
+                      </div>
+                      <div className="space-y-4">
+                        {form.bullets.map((bullet, idx) => (
+                          <div key={idx} className="flex gap-4 items-center group">
+                             <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-black text-slate-400 group-focus-within:bg-primary group-focus-within:text-white transition-all">0{idx+1}</div>
+                             <input 
+                               type="text"
+                               value={bullet}
+                               onChange={(e) => {
+                                 const newBullets = [...form.bullets];
+                                 newBullets[idx] = e.target.value;
+                                 setForm({ ...form, bullets: newBullets });
+                               }}
+                               placeholder={`Bullet point ${idx+1}`}
+                               className="flex-1 bg-slate-100 dark:bg-slate-800 p-5 rounded-2xl border-none font-bold text-sm text-slate-900 dark:text-white outline-none focus:bg-white dark:focus:bg-slate-700 transition-all font-lora"
+                             />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="mt-12 space-y-6">
+                      <div className="flex items-center gap-3">
+                         <HelpCircle className="w-5 h-5 text-primary" />
+                         <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">ELI5 Explanation (Explain Like I'm 15)</label>
+                      </div>
+                      <textarea 
+                        value={form.eli5}
+                        onChange={(e) => setForm({ ...form, eli5: e.target.value })}
+                        placeholder="How would you explain this concept to a teenager? Keep it simple, vivid, and conceptual."
+                        className="w-full bg-slate-100 dark:bg-slate-800 p-8 rounded-[3rem] border-none text-lg font-bold font-lora text-slate-800 dark:text-white outline-none focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-700 min-h-[150px] leading-relaxed"
+                      />
                     </div>
                   </div>
 

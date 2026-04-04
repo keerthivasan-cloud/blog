@@ -41,7 +41,7 @@ export const ContentProvider = ({ children }) => {
   useEffect(() => {
     const fetchArticles = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/articles');
+        const res = await axios.get('http://localhost:5001/api/articles');
         setArticles(res.data);
       } catch (error) {
         console.error("Backend Synchronization Failure", error);
@@ -60,7 +60,7 @@ export const ContentProvider = ({ children }) => {
 
   const deleteArticle = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/api/articles/${id}`);
+      await axios.delete(`http://localhost:5001/api/articles/${id}`);
       setArticles(prev => prev.filter(a => a._id !== id));
     } catch (error) {
       console.error("Archive Purge Failure", error);
