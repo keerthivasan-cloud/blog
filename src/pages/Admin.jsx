@@ -37,6 +37,7 @@ export default function Admin() {
       .trim();
 
   useEffect(() => {
+    // Only auto-generate if the slug is empty OR matched the previous title-based generation
     if (form.title && !form.slug) {
       setForm(prev => ({ ...prev, slug: generateSlug(prev.title) }));
     }
@@ -170,18 +171,36 @@ export default function Admin() {
                
                {/* 1. Core Metadata Box */}
                <div className="bg-white dark:bg-slate-900 p-12 md:p-16 rounded-[4rem] border border-slate-100 dark:border-slate-800 shadow-2xl shadow-slate-200/20 dark:shadow-none space-y-12 transition-colors duration-500">
-                  <div className="space-y-6 text-left">
-                    <label className="text-[10px] font-black uppercase tracking-[0.4em] text-primary flex items-center gap-3 ml-4">
-                      <FileText className="w-4 h-4" /> Insight Identifier (Headline)
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="ENTER PINNACLE HEADLINE..."
-                      className="w-full bg-slate-50 dark:bg-slate-800/30 border-none rounded-[2rem] p-10 text-4xl font-black font-['Outfit'] placeholder:text-slate-100 dark:placeholder:text-slate-800 outline-none focus:ring-8 focus:ring-primary/5 transition-all dark:text-white uppercase tracking-tight"
-                      value={form.title}
-                      onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-12 text-left">
+                    <div className="space-y-6">
+                      <label className="text-[10px] font-black uppercase tracking-[0.4em] text-primary flex items-center gap-3 ml-4">
+                        <FileText className="w-4 h-4" /> Insight Identifier (Headline)
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="ENTER PINNACLE HEADLINE..."
+                        className="w-full bg-slate-50 dark:bg-slate-800/30 border-none rounded-[2rem] p-10 text-3xl font-black font-['Outfit'] placeholder:text-slate-100 dark:placeholder:text-slate-800 outline-none focus:ring-8 focus:ring-primary/5 transition-all dark:text-white uppercase tracking-tight"
+                        value={form.title}
+                        onChange={(e) => setForm({ ...form, title: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-6">
+                      <label className="text-[10px] font-black uppercase tracking-[0.4em] text-primary flex items-center gap-3 ml-4">
+                        <LinkIcon className="w-4 h-4" /> Resource Slug (Meta Route)
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="MAPPING-IDENTIFIER-V1"
+                        className="w-full bg-slate-50 dark:bg-slate-800/30 border-none rounded-[2rem] p-10 text-xl font-black font-['Outfit'] placeholder:text-slate-100 dark:placeholder:text-slate-800 outline-none focus:ring-8 focus:ring-primary/5 transition-all text-slate-400 uppercase tracking-widest lowercase"
+                        value={form.slug}
+                        onChange={(e) => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
+                      />
+                      <p className="pl-4 text-[9px] font-bold text-slate-300 dark:text-slate-700 uppercase tracking-widest">
+                        Permanent URI: /{form.category.toLowerCase()}/<span className="text-primary">{form.slug || 'node-name'}</span>
+                      </p>
+                    </div>
                   </div>
 
                   {/* Block Editor Area */}
@@ -255,12 +274,21 @@ export default function Admin() {
                                   <button onClick={() => updateBlock(idx, { items: [...block.items, ''] })} type="button" className="text-[9px] font-black uppercase tracking-widest text-primary border-none bg-transparent cursor-pointer mt-4">+ ADD INDEX</button>
                                </div>
                              )}
+                             {block.type === 'quote' && (
+                               <textarea 
+                                 value={block.text} 
+                                 onChange={(e) => updateBlock(idx, { text: e.target.value })} 
+                                 className="w-full bg-white dark:bg-slate-900 p-8 rounded-3xl border-2 border-primary/20 text-xl font-black italic text-slate-900 dark:text-white outline-none resize-none" 
+                                 placeholder="MISSION-CRITICAL INSIGHT..." 
+                                 rows="3"
+                               />
+                             )}
                              {block.type === 'highlight' && (
                                <textarea 
                                  value={block.text} 
                                  onChange={(e) => updateBlock(idx, { text: e.target.value })} 
                                  className="w-full bg-primary/5 p-6 rounded-2xl border border-primary/10 text-lg font-black text-slate-900 dark:text-white outline-none resize-none" 
-                                 placeholder="MISSION-CRITICAL INSIGHT..." 
+                                 placeholder="CORE EMPHASIS CONTENT..." 
                                  rows="3"
                                />
                              )}

@@ -100,32 +100,32 @@ const ArticleDetail = () => {
                 {article.excerpt}
               </p>
 
-              <div className="flex flex-wrap items-center justify-between gap-10 py-10 border-y border-slate-100 dark:border-slate-900">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-3xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-black text-slate-400 text-lg border border-slate-200 dark:border-slate-700">
+              <div className="flex flex-wrap items-center justify-between gap-8 py-8 border-y border-slate-100 dark:border-slate-900">
+                <div className="flex items-center gap-4 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md p-3 pr-8 rounded-[2rem] border border-white/20 dark:border-slate-800/40 shadow-sm transition-all hover:bg-white/60 dark:hover:bg-slate-900/60">
+                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center font-black text-primary text-base border border-primary/20 shrink-0">
                     {article.author?.[0] || 'A'}
                   </div>
-                  <div>
-                    <div className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Author</div>
-                    <div className="text-lg font-black font-['Outfit'] dark:text-white">{article.author || "NewsForge Analyst"}</div>
+                  <div className="text-left">
+                    <div className="text-[9px] uppercase font-black tracking-[0.3em] text-slate-400 mb-0.5">Author Access</div>
+                    <div className="text-sm font-black font-['Outfit'] text-slate-900 dark:text-white uppercase tracking-tight">{article.author || "NewsForge Analyst"}</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-12 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-[8px] text-slate-200 dark:text-slate-800">Timestamp</span>
-                    <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400"><Calendar className="w-4 h-4 text-primary" /> {formattedDate}</div>
+                <div className="flex items-center gap-10 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">
+                  <div className="flex flex-col gap-1 text-left">
+                    <span className="text-[8px] text-slate-200 dark:text-slate-800 font-bold">Published Node</span>
+                    <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400"><Calendar className="w-3.5 h-3.5 text-primary" /> {formattedDate}</div>
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-[8px] text-slate-200 dark:text-slate-800">Capacity</span>
-                    <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400"><Clock className="w-4 h-4 text-primary" /> {article.readTime || 5} MINS</div>
+                  <div className="flex flex-col gap-1 text-left">
+                    <span className="text-[8px] text-slate-200 dark:text-slate-800 font-bold">Data Capacity</span>
+                    <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400"><Clock className="w-3.5 h-3.5 text-primary" /> {article.readTime || 5} MINS</div>
                   </div>
                 </div>
-                <div className="flex gap-3">
-                  <button onClick={copyLink} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-400 hover:text-primary transition-all cursor-pointer relative group">
-                    {copied ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5" />}
-                    <span className="absolute -top-12 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[8px] px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">Copy URI</span>
+                <div className="flex gap-2.5">
+                  <button onClick={copyLink} className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-400 hover:text-primary transition-all cursor-pointer relative group shadow-sm">
+                    {copied ? <CheckCircle2 className="w-4.5 h-4.5 text-green-500" /> : <Copy className="w-4.5 h-4.5" />}
+                    <span className="absolute -top-12 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[8px] px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Copy Link</span>
                   </button>
-                  <button className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-400 hover:text-primary transition-all cursor-pointer"><Share2 className="w-5 h-5" /></button>
+                  <button className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-400 hover:text-primary transition-all cursor-pointer shadow-sm"><Share2 className="w-4.5 h-4.5" /></button>
                 </div>
               </div>
             </motion.div>
@@ -156,14 +156,14 @@ const ArticleDetail = () => {
               {/* 5. AUTHOR SECTION */}
               <div className="mt-40 p-12 lg:p-16 rounded-[4rem] bg-slate-900 text-white relative overflow-hidden">
                 <Sparkles className="absolute top-[-10%] right-[-5%] w-60 h-60 text-white/5" />
-                <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
-                  <div className="w-32 h-32 rounded-[2.5rem] bg-gradient-to-br from-primary to-orange-700 flex items-center justify-center text-4xl font-black font-['Outfit'] border-[6px] border-white/10 shrink-0 shadow-2xl">
+                <div className="relative z-10 flex flex-col md:flex-row items-center gap-10">
+                  <div className="w-24 h-24 rounded-[2rem] bg-gradient-to-br from-primary to-orange-700 flex items-center justify-center text-3xl font-black font-['Outfit'] border-4 border-white/10 shrink-0 shadow-2xl">
                     {article.author?.[0] || 'A'}
                   </div>
                   <div className="text-center md:text-left">
-                     <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary mb-3 block">Primary Intelligence Catalyst</span>
-                     <h4 className="text-4xl font-black font-['Outfit'] mb-6 uppercase tracking-tight">{article.author || "NewsForge Analyst"}</h4>
-                     <p className="text-white/40 font-bold uppercase tracking-widest text-[11px] leading-loose max-w-xl">
+                     <span className="text-[9px] font-black uppercase tracking-[0.4em] text-primary mb-2 block">Primary Intelligence Catalyst</span>
+                     <h4 className="text-2xl font-black font-['Outfit'] mb-4 uppercase tracking-tight">{article.author || "NewsForge Analyst"}</h4>
+                     <p className="text-white/40 font-bold uppercase tracking-[0.2em] text-[10px] leading-relaxed max-w-xl">
                        Strategic analyst focused on emerging market architectures and technical paradigms. Exploring the nexus of data, finance, and global infrastructure.
                      </p>
                   </div>
