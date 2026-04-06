@@ -88,6 +88,52 @@ articleRouter.get("/:slug", (req, res) => {
   res.json(post);
 });
 
+// --- MANUAL ARTICLE SYNTHESIS ---
+articleRouter.post("/", async (req, res) => {
+  try {
+    const { title, category, author, readTime, image, excerpt, content, slug: customSlug } = req.body;
+    
+    if (!title || !content) {
+      return res.status(400).json({ message: "Intelligence Node Incomplete: Title and Content required." });
+    }
+
+    const slug = customSlug || title.toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-");
+    const date = new Date().toISOString().split('T')[0];
+
+    // Block-to-Markdown Conversion Engine
+    let mdContent = `---\ntitle: "${title}"\ndate: "${date}"\ncategory: "${category || 'Tech'}"\nreadTime: "${readTime || 5} min"\nimage: "${image || ''}"\nexcerpt: "${excerpt || ''}"\nauthor: "NewsForge"\n---\n\n# ${title}\n\n`;
+
+    if (Array.isArray(content)) {
+      content.forEach(block => {
+        if (block.type === 'paragraph') mdContent += `${block.text}\n\n`;
+        if (block.type === 'heading') mdContent += `${'#'.repeat(block.level || 2)} ${block.text}\n\n`;
+        if (block.type === 'list') {
+          block.items.forEach(item => { if(item) mdContent += `- ${item}\n`; });
+          mdContent += `\n`;
+        }
+        if (block.type === 'quote') mdContent += `> ${block.text}\n\n`;
+        if (block.type === 'highlight') mdContent += `:::insight\n${block.text}\n:::\n\n`;
+        if (block.type === 'image') mdContent += `![${block.alt || ''}](${block.url})\n\n`;
+      });
+    } else if (typeof content === 'string') {
+      mdContent += content;
+    }
+
+    const filePath = path.join(__dirname, "content", `${slug}.md`);
+    fs.writeFileSync(filePath, mdContent);
+
+    res.json({ 
+      success: true, 
+      message: "Technical node published to archive", 
+      slug: slug,
+      category: category 
+    });
+  } catch (error) {
+    console.error("Manual Synthesis Failure:", error);
+    res.status(500).json({ message: "Failed to publish intelligence node: " + error.message });
+  }
+});
+
 // Mount specialized router
 app.use("/api/articles", articleRouter);
 app.use("/api/blogs", articleRouter); // Alias as requested for blogs specific endpoint
