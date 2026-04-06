@@ -28,19 +28,20 @@ const QuickReads = () => {
   if (loading) return <QuickReadsSkeleton />;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-500">
+    <div className="min-h-screen transition-colors duration-500 selection:bg-orange-500/30 relative overflow-hidden" style={{ background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
+      <div className="mesh-gradient opacity-10" />
       <Navbar />
       
-      <main className="max-w-4xl mx-auto px-6 py-24">
-        <header className="text-center mb-20">
-          <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.4em] mb-6">
-            <Zap className="w-3.5 h-3.5 fill-primary" /> Intelligence Stream v4.0
+      <main className="max-w-4xl mx-auto px-6 py-12">
+        <header className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md border text-[8px] font-bold uppercase tracking-[0.3em] mb-4" style={{ background: 'var(--accent-soft)', borderColor: 'var(--accent-soft)' }}>
+            <Zap className="w-3 h-3 fill-current" style={{ color: 'var(--accent)' }} /> Intelligence Stream v4.0
           </div>
-          <h1 className="text-5xl md:text-7xl font-black font-['Outfit'] text-slate-900 dark:text-white uppercase tracking-tighter leading-none mb-6">
+          <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none mb-3 title">
             Quick Reads
           </h1>
-          <p className="text-slate-400 font-bold uppercase text-[11px] tracking-[0.3em]">
-            Consume 10 articles' value in under 2 minutes.
+          <p className="font-bold uppercase text-[9px] tracking-[0.2em] subtitle">
+            High-velocity intelligence for the modern architect.
           </p>
         </header>
 
@@ -48,32 +49,31 @@ const QuickReads = () => {
           {articles.map((article, idx) => (
             <motion.div 
               key={article._id}
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 15 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="bg-white dark:bg-slate-900 rounded-[3rem] p-10 md:p-14 border border-slate-100 dark:border-slate-800 shadow-2xl shadow-slate-200/20 dark:shadow-none group relative overflow-hidden"
+              className="card rounded-2xl p-8 md:p-10 group relative overflow-hidden"
             >
-              <div className="absolute top-0 left-0 w-2 h-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute top-0 left-0 w-1 h-full opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: 'var(--accent)' }} />
               
-              <div className="flex items-center justify-between mb-8">
-                 <div className="flex items-center gap-4">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-primary">{article.category}</span>
-                    <div className="w-1 h-1 rounded-full bg-slate-200 dark:bg-slate-800" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-300 dark:text-slate-700">{new Date(article.createdAt).toLocaleDateString()}</span>
+              <div className="flex items-center justify-between mb-6">
+                 <div className="flex p-1 rounded-md border shadow-sm" style={{ background: 'var(--bg-soft)', borderColor: 'var(--border)' }}>
+                    <span className="px-3 py-1 rounded-sm text-[8px] font-bold uppercase tracking-widest shadow-sm" style={{ background: 'var(--bg-main)', color: 'var(--accent)' }}>{article.category}</span>
+                    <span className="px-3 py-1 text-[8px] font-bold uppercase tracking-widest subtitle">{new Date(article.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
                  </div>
-                 <div className="text-[10px] font-black uppercase tracking-widest text-slate-300 group-hover:text-primary transition-colors">0{idx + 1} / {articles.length}</div>
+                 <div className="text-[9px] font-bold uppercase tracking-[0.3em] opacity-30 tabular-nums">DATA_NODE_0{idx + 1}</div>
               </div>
 
-              <h2 className="text-3xl md:text-4xl font-black font-['Outfit'] text-slate-900 dark:text-white uppercase leading-tight mb-8 group-hover:translate-x-2 transition-transform">
+              <h2 className="text-2xl md:text-3xl font-black text-foreground uppercase leading-tight mb-6 group-hover:translate-x-1 transition-transform h-gradient">
                 {article.title}
               </h2>
 
               <div className="space-y-4 mb-10">
                 {article.bullets?.length > 0 ? (
                   article.bullets.slice(0, 3).map((bullet, bIdx) => (
-                    <div key={bIdx} className="flex gap-4 items-start">
-                       <Zap className="w-4 h-4 text-primary shrink-0 mt-1" />
-                       <p className="text-base font-bold font-lora text-slate-600 dark:text-slate-400 leading-relaxed italic uppercase tracking-tight">{bullet}</p>
+                    <div key={bIdx} className="flex gap-3 items-start">
+                       <Zap className="w-3 h-3 text-primary shrink-0 mt-1" />
+                       <p className="text-sm font-bold font-lora text-muted-foreground leading-snug italic uppercase tracking-tight">{bullet}</p>
                     </div>
                   ))
                 ) : (
@@ -81,17 +81,18 @@ const QuickReads = () => {
                 )}
               </div>
 
-              <div className="flex items-center justify-between pt-8 border-t border-slate-50 dark:border-slate-800">
-                 <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                    <Clock className="w-4 h-4" /> {article.readTime || 5} MINS CAPACITY
-                 </div>
-                 <Link 
-                   to={`/${article.category.toLowerCase().replace(/\s+/g, '-')}/${article.slug}`}
-                   className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-primary hover:gap-5 transition-all no-underline"
-                 >
-                   Deep Analysis <ArrowRight className="w-4 h-4" />
-                 </Link>
-              </div>
+               <div className="flex items-center justify-between pt-6 border-t" style={{ borderColor: 'var(--border)' }}>
+                  <div className="flex items-center gap-2 text-[8px] font-bold uppercase tracking-widest mono subtitle">
+                     <Clock className="w-3 h-3" /> DATA_CAP_0{article.readTime || 5}M
+                  </div>
+                  <Link 
+                    to={`/${article.category.toLowerCase().replace(/\s+/g, '-')}/${article.slug}`}
+                    className="flex items-center gap-3 text-[9px] font-bold uppercase tracking-[0.2em] hover:gap-4 transition-all no-underline group/link"
+                    style={{ color: 'var(--accent)' }}
+                  >
+                    Integrate <div className="w-7 h-7 rounded-lg flex items-center justify-center group-hover/link:bg-[var(--accent)] group-hover/link:text-white transition-all shadow-lg" style={{ background: 'var(--accent-soft)' }}><ArrowRight className="w-3 h-3" /></div>
+                  </Link>
+               </div>
             </motion.div>
           ))}
         </div>
@@ -107,11 +108,11 @@ const QuickReads = () => {
 };
 
 const QuickReadsSkeleton = () => (
-  <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+  <div className="min-h-screen" style={{ background: 'var(--bg-main)' }}>
     <Navbar />
     <div className="max-w-4xl mx-auto px-6 py-24 space-y-12">
       {[1, 2, 3].map(i => (
-        <div key={i} className="h-96 w-full bg-white dark:bg-slate-900 rounded-[3rem] animate-pulse" />
+        <div key={i} className="h-96 w-full card rounded-[3rem] animate-pulse" />
       ))}
     </div>
   </div>

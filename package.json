@@ -7,13 +7,16 @@
     "dev": "vite",
     "server-dev": "cd server && npm run dev",
     "build": "vite build",
+    "build:blogs": "node scripts/build-static.cjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
     "axios": "^1.14.0",
     "framer-motion": "^12.38.0",
+    "gray-matter": "^4.0.3",
     "lucide-react": "^0.453.0",
+    "marked": "^17.0.6",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-quill-new": "^3.8.3",

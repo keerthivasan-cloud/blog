@@ -21,6 +21,7 @@ export const ReadingProgressBar = () => {
 
 // 2. Table of Contents
 export const TableOfContents = ({ content }) => {
+  if (!content || !Array.isArray(content)) return null;
   const headings = content.filter(block => block.type === 'heading');
 
   const scrollToHeading = (id) => {
@@ -35,9 +36,8 @@ export const TableOfContents = ({ content }) => {
 
   return (
     <nav className="space-y-6">
-      <div className="flex items-center gap-3 mb-8">
-        <div className="w-1.5 h-6 bg-primary rounded-full" />
-        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white font-['Outfit']">Inside This Brief</h3>
+      <div className="flex items-center gap-3 mb-8 h-marker">
+        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Inside This Brief</h3>
       </div>
       <div className="space-y-4">
         {headings.map((heading, idx) => {
@@ -74,7 +74,7 @@ export const BlockRenderer = ({ blocks }) => {
         switch (block.type) {
           case 'paragraph':
             return (
-              <p key={idx} className="text-xl md:text-[22px] text-slate-700 dark:text-slate-300 leading-[1.8] font-lora font-normal">
+              <p key={idx} className="text-xl text-slate-700 dark:text-slate-300 leading-[1.8] font-lora font-normal">
                 {block.text}
               </p>
             );
@@ -86,8 +86,8 @@ export const BlockRenderer = ({ blocks }) => {
               <HeadingTag
                 key={idx}
                 id={id}
-                className={`font-black font-['Outfit'] text-slate-900 dark:text-white tracking-tighter uppercase ${
-                  block.level === 3 ? 'text-2xl mt-12 mb-4' : 'text-3xl md:text-4xl mt-16 mb-8 border-l-4 border-primary pl-6'
+                className={`font-black text-foreground tracking-tighter uppercase ${
+                  block.level === 3 ? 'text-2xl mt-10 mb-4 h-marker' : 'text-3xl md:text-4xl mt-14 mb-8 border-l-4 border-primary pl-6 h-gradient'
                 }`}
               >
                 {block.text}
@@ -98,7 +98,7 @@ export const BlockRenderer = ({ blocks }) => {
             return (
               <ul key={idx} className="space-y-4 my-8 pl-4">
                 {block.items.map((item, i) => (
-                  <li key={i} className="flex items-start gap-4 text-xl md:text-[22px] text-slate-700 dark:text-slate-300 font-lora font-normal">
+                  <li key={i} className="flex items-start gap-4 text-xl text-slate-700 dark:text-slate-300 font-lora font-normal">
                     <div className="w-2 h-2 bg-primary rounded-full mt-3.5 flex-shrink-0" />
                     <span>{item}</span>
                   </li>
@@ -108,9 +108,9 @@ export const BlockRenderer = ({ blocks }) => {
 
           case 'quote':
             return (
-              <blockquote key={idx} className="relative my-14 p-10 md:p-14 bg-slate-50 dark:bg-slate-900/40 rounded-[2.5rem] border-l-[8px] border-primary/30">
-                <Quote className="absolute top-6 left-6 w-12 h-12 text-primary/10 -rotate-12" />
-                <p className="relative z-10 text-2xl md:text-3xl font-black font-lora italic text-slate-800 dark:text-white leading-tight">
+              <blockquote key={idx} className="relative my-12 p-8 md:p-12 bg-muted/30 rounded-2xl border-l-[6px] border-primary/40">
+                <Quote className="absolute top-4 left-4 w-10 h-10 text-primary/10 -rotate-12" />
+                <p className="relative z-10 text-xl md:text-2xl font-black italic text-foreground leading-tight tracking-tight">
                   "{block.text}"
                 </p>
               </blockquote>
@@ -120,11 +120,8 @@ export const BlockRenderer = ({ blocks }) => {
             return (
               <div key={idx} className="my-12 p-8 md:p-10 bg-orange-50/30 dark:bg-orange-500/5 border border-orange-100 dark:border-orange-500/20 rounded-[2.5rem] relative overflow-hidden group">
                 <Sparkles className="absolute top-[-10%] right-[-5%] w-32 h-32 text-primary/5 group-hover:scale-110 transition-transform duration-1000" />
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-orange-500/10">
-                    <Sparkles className="w-4 h-4 text-white" />
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Core Insight</span>
+                <div className="flex items-center gap-3 mb-4 h-marker">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-primary">Core Insight</span>
                 </div>
                 <p className="text-lg md:text-xl font-bold text-slate-800 dark:text-slate-200 leading-relaxed relative z-10 font-lora">
                   {block.text}

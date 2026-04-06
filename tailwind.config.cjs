@@ -8,24 +8,20 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: "#f97316",
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
-        secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
-        },
+        primary: "var(--accent)",
+        border: "var(--border)",
+        background: "var(--bg-main)",
+        foreground: "var(--text-primary)",
         muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
+          DEFAULT: "var(--text-muted)",
+          foreground: "var(--text-secondary)",
         },
         accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
+          DEFAULT: "var(--accent)",
+          foreground: "var(--accent-hover)",
         },
+        card: "var(--bg-card)",
+        soft: "var(--bg-soft)",
       }
     },
   },

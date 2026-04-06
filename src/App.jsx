@@ -18,6 +18,7 @@ import FinanceIndex from './pages/finance/index';
 import GlobalMarketIndex from './pages/global-market/index';
 import CommoditiesIndex from './pages/commodities/index';
 import TechIndex from './pages/tech/index';
+import Write from './pages/Write';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
           <Route path="/commodities" element={<CommoditiesIndex />} />
           <Route path="/tech" element={<TechIndex />} />
           <Route path="/quick-reads" element={<QuickReads />} />
+          <Route path="/write" element={<Write />} />
           
           <Route path="/:category/:slug" element={<ArticleDetail />} />
           <Route path="/about" element={<About />} />

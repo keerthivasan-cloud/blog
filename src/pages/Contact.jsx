@@ -13,7 +13,7 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950 transition-colors duration-500">
+    <div className="min-h-screen transition-colors duration-500" style={{ background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
       <Navbar />
       <main className="max-w-7xl mx-auto px-8 pt-40 pb-60">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-20">
@@ -24,13 +24,13 @@ const Contact = () => {
              transition={{ duration: 0.8 }}
              className="lg:col-span-5"
           >
-            <div className="flex items-center gap-3 mb-10 px-6 py-2.5 rounded-full bg-primary/5 border border-primary/10 w-fit">
-               <Zap className="w-4 h-4 text-primary fill-primary" />
-               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Terminal Support</span>
+            <div className="flex items-center gap-3 mb-10 px-6 py-2.5 rounded-full border w-fit" style={{ background: 'var(--accent-soft)', borderColor: 'var(--accent-soft)' }}>
+               <Zap className="w-4 h-4 fill-current" style={{ color: 'var(--accent)' }} />
+               <span className="text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: 'var(--accent)' }}>Terminal Support</span>
             </div>
             
-            <h1 className="text-6xl md:text-8xl font-black mb-10 font-['Outfit'] -tracking-tight text-slate-900 dark:text-white leading-[0.95] uppercase">Connect <br /><span className="gradient-text">Nexus</span></h1>
-            <p className="text-xl text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest mb-20 leading-relaxed">Synchronize with our technical desk for story briefs, analyst inquiries, or infrastructure support.</p>
+            <h1 className="text-6xl md:text-8xl font-black mb-10 -tracking-tight leading-[0.95] uppercase title">Connect <br /><span className="gradient-text">Nexus</span></h1>
+            <p className="text-xl font-bold uppercase tracking-widest mb-20 leading-relaxed subtitle">Synchronize with our technical desk for story briefs, analyst inquiries, or infrastructure support.</p>
 
             <div className="space-y-10">
                <div className="flex items-center gap-8 group">

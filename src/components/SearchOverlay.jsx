@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, Loader2, Calendar, Clock, ArrowRight } from 'lucide-react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import API_BASE_URL from '../config';
 
 export default function SearchOverlay({ isOpen, onClose }) {
   const [query, setQuery] = useState('');
@@ -36,7 +37,7 @@ export default function SearchOverlay({ isOpen, onClose }) {
   const performSearch = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`http://localhost:5000/api/search?q=${query}`);
+      const res = await axios.get(`${API_BASE_URL}/search?q=${query}`);
       setResults(res.data);
     } catch (err) {
       console.error("Search failure:", err);

@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Navbar, Footer, BlogCard } from '../components/Layout';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import API_BASE_URL from '../config';
 
 const CategoryPage = ({ category, title, description }) => {
   const [articles, setArticles] = useState([]);
@@ -11,14 +12,14 @@ const CategoryPage = ({ category, title, description }) => {
 
   useEffect(() => {
     setLoading(true);
-    axios.get(`http://localhost:5000/api/articles?category=${category}&status=published`)
+    axios.get(`${API_BASE_URL}/articles?category=${category}&status=published`)
       .then(res => setArticles(res.data))
       .catch(err => console.error("Failed to fetch category articles:", err))
       .finally(() => setLoading(false));
   }, [category]);
 
   return (
-    <div className="min-h-screen bg-slate-50/30 dark:bg-slate-950 transition-colors duration-500">
+    <div className="min-h-screen transition-colors duration-500" style={{ background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
       <Navbar />
       <main className="max-w-[1500px] mx-auto px-8 pt-24 pb-40">
         <motion.div
@@ -31,9 +32,9 @@ const CategoryPage = ({ category, title, description }) => {
              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> System Index
           </Link>
  
-          <div className="w-12 h-1 bg-[#f97316] mb-10 rounded-full shadow-lg shadow-orange-500/20" />
-          <h1 className="text-6xl md:text-8xl font-black mt-4 mb-8 font-['Outfit'] -tracking-tighter text-slate-900 dark:text-white uppercase leading-[0.9]">{title}</h1>
-          <p className="text-xl md:text-2xl text-slate-400 dark:text-slate-500 font-medium font-lora italic leading-relaxed max-w-4xl border-l-4 border-slate-100 dark:border-slate-900 pl-8">{description}</p>
+          <div className="w-12 h-1 mb-10 rounded-full shadow-lg shadow-orange-500/20" style={{ background: 'var(--accent)' }} />
+          <h1 className="text-6xl md:text-8xl font-black mt-4 mb-8 -tracking-tighter uppercase leading-[0.9] title">{title}</h1>
+          <p className="text-xl md:text-2xl font-medium italic leading-relaxed max-w-4xl border-l-4 pl-8 subtitle" style={{ borderColor: 'var(--border)' }}>{description}</p>
         </motion.div>
 
         {loading ? (
@@ -64,11 +65,18 @@ const CategoryPage = ({ category, title, description }) => {
             ))}
           </div>
         ) : (
-          <div className="glass p-24 rounded-[4rem] text-center border-slate-200/50 dark:border-slate-800 bg-white dark:bg-slate-900/50 shadow-2xl max-w-2xl mx-auto">
-            <h3 className="text-3xl font-black mb-6 font-['Outfit'] dark:text-white uppercase tracking-tight">Active Coverage Pending</h3>
-            <p className="text-slate-500 font-bold uppercase text-[11px] tracking-widest leading-loose">Insights for "{title}" are currently in the editorial terminal. Checking synchronization status...</p>
-            <Link to="/" className="primary-btn mt-12 py-5 px-10 text-[10px] uppercase tracking-widest">Return Home</Link>
-          </div>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="card p-20 md:p-32 rounded-[5rem] text-center max-w-4xl mx-auto relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 p-20 opacity-[0.03] rotate-12"><Loader2 className="w-96 h-96 animate-spin-slow" /></div>
+            <div className="relative z-10">
+               <h3 className="text-4xl md:text-6xl font-black mb-8 uppercase tracking-tighter leading-none title">Active Coverage <br /><span className="gradient-text">Pending</span></h3>
+               <p className="font-bold uppercase text-[12px] tracking-[0.4em] leading-loose max-w-lg mx-auto mb-16 subtitle">The "{title}" intelligence node is currently being recalibrated. Editorial synchronization is scheduled for the next market cycle.</p>
+               <Link to="/" className="btn-primary py-6 px-16 text-[11px] uppercase tracking-[0.5em] rounded-full shadow-2xl inline-block no-underline">Return to Nexus</Link>
+            </div>
+          </motion.div>
         )}
       </main>
       <Footer />

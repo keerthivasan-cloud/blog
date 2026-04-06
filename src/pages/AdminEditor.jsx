@@ -9,6 +9,7 @@ import {
   ChevronUp, ChevronDown, Quote, List as ListIcon, Info
 } from 'lucide-react';
 import { BlockRenderer } from '../components/ArticlePageComponents';
+import API_BASE_URL from '../config';
 
 const AdminEditor = () => {
   const { id } = useParams();
@@ -32,7 +33,7 @@ const AdminEditor = () => {
 
   useEffect(() => {
     if (!isNew) {
-      axios.get(`http://localhost:5000/api/articles`)
+      axios.get(`${API_BASE_URL}/articles`)
         .then(res => {
           const article = res.data.find(a => a._id === id || a.slug === id);
           if (article) {
@@ -50,9 +51,9 @@ const AdminEditor = () => {
     setIsSaving(true);
     try {
       if (isNew) {
-        await axios.post('http://localhost:5000/api/articles', formData);
+        await axios.post(`${API_BASE_URL}/articles`, formData);
       } else {
-        await axios.put(`http://localhost:5000/api/articles/${formData._id}`, formData);
+        await axios.put(`${API_BASE_URL}/articles/${formData._id}`, formData);
       }
       navigate('/admin/dashboard');
     } catch (error) {
@@ -65,6 +66,108 @@ const AdminEditor = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const uploadData = new FormData();
+    uploadData.append('image', file);
+
+    try {
+      const res = await axios.post(`${API_BASE_URL}/upload`, uploadData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setFormData(prev => ({ ...prev, image: res.data.url }));
+    } catch (err) {
+      console.error("Upload Failure", err);
+      alert("Failed to upload image. Resource denied.");
+    }
+  };
+ 
+  const parseMarkdownToBlocks = (text) => {
+    const lines = text.split('\n');
+    const blocks = [];
+    let currentList = null;
+ 
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        if (currentList) {
+          blocks.push({ type: 'list', items: currentList });
+          currentList = null;
+        }
+        return;
+      }
+ 
+      // Heading Detection
+      const headingMatch = trimmed.match(/^(#{1,6})\s+(.*)/);
+      if (headingMatch) {
+        if (currentList) { blocks.push({ type: 'list', items: currentList }); currentList = null; }
+        const level = headingMatch[1].length;
+        blocks.push({ type: 'heading', level: Math.min(level + 1, 3), text: headingMatch[2] });
+        if (level === 1 && !formData.title) {
+          setFormData(prev => ({ ...prev, title: headingMatch[2], slug: headingMatch[2].toLowerCase().replace(/\s+/g, '-') }));
+        }
+        return;
+      }
+ 
+      // Quote Detection
+      const quoteMatch = trimmed.match(/^>\s+(.*)/);
+      if (quoteMatch) {
+        if (currentList) { blocks.push({ type: 'list', items: currentList }); currentList = null; }
+        blocks.push({ type: 'quote', text: quoteMatch[1] });
+        return;
+      }
+ 
+      // List Detection
+      const listMatch = trimmed.match(/^[*-]\s+(.*)/);
+      if (listMatch) {
+        if (!currentList) currentList = [];
+        currentList.push(listMatch[1]);
+        return;
+      }
+ 
+      // Image Detection
+      const imageMatch = trimmed.match(/^!\[(.*)\]\((.*)\)/);
+      if (imageMatch) {
+        if (currentList) { blocks.push({ type: 'list', items: currentList }); currentList = null; }
+        blocks.push({ type: 'image', alt: imageMatch[1], url: imageMatch[2] });
+        return;
+      }
+ 
+      // Insight (Custom) Detection :::insight 
+      const insightMatch = trimmed.match(/^:::insight\s+(.*)/);
+      if (insightMatch) {
+        if (currentList) { blocks.push({ type: 'list', items: currentList }); currentList = null; }
+        blocks.push({ type: 'highlight', text: insightMatch[1] });
+        return;
+      }
+ 
+      // Default Paragraph
+      if (currentList) { blocks.push({ type: 'list', items: currentList }); currentList = null; }
+      blocks.push({ type: 'paragraph', text: trimmed });
+    });
+ 
+    if (currentList) blocks.push({ type: 'list', items: currentList });
+    return blocks;
+  };
+ 
+  const handleMarkdownUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+ 
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target.result;
+      const parsedBlocks = parseMarkdownToBlocks(content);
+      setFormData(prev => ({
+        ...prev,
+        content: [...prev.content, ...parsedBlocks]
+      }));
+    };
+    reader.readAsText(file);
   };
 
   // --- BLOCK MANAGEMENT ---
@@ -206,7 +309,16 @@ const AdminEditor = () => {
                      <EditorInput label="Contributor" name="author" value={formData.author} icon={<User className="w-4 h-4" />} onChange={handleInputChange} />
                      <EditorInput label="Read Delta (m)" name="readTime" value={formData.readTime} icon={<Clock className="w-4 h-4" />} onChange={handleInputChange} />
                   </div>
-                  <EditorInput label="Hero Asset URI" name="image" value={formData.image} icon={<LucideImage className="w-4 h-4" />} onChange={handleInputChange} fullWidth />
+                  <EditorInput 
+                    label="Hero Asset URI" 
+                    name="image" 
+                    value={formData.image} 
+                    icon={<LucideImage className="w-4 h-4" />} 
+                    onChange={handleInputChange} 
+                    fullWidth 
+                    showUpload
+                    onFileUpload={handleFileUpload}
+                  />
                   
                   <div className="space-y-4 text-left">
                     <label className="text-[10px] uppercase tracking-[0.4em] text-slate-400 dark:text-slate-600 font-black px-6">Transmission Abstract</label>
@@ -229,6 +341,14 @@ const AdminEditor = () => {
                     <BlockAction type="quote" icon={<Quote className="w-4 h-4" />} label="Quote" onClick={() => addBlock('quote')} />
                     <BlockAction type="highlight" icon={<Sparkles className="w-4 h-4" />} label="Insight" onClick={() => addBlock('highlight')} />
                     <BlockAction type="image" icon={<LucideImage className="w-4 h-4" />} label="Asset" onClick={() => addBlock('image')} />
+                    <div className="w-px h-10 bg-slate-100 dark:bg-slate-800 self-center mx-2" />
+                    <label className="flex flex-col items-center gap-2 p-3 rounded-2xl hover:bg-white dark:hover:bg-slate-800 transition-all group border-none bg-transparent cursor-pointer">
+                      <div className="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white group-hover:shadow-lg group-hover:shadow-orange-500/20 transition-all">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <span className="text-[8px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors mono">Import MD</span>
+                      <input type="file" className="hidden" accept=".md" onChange={handleMarkdownUpload} />
+                    </label>
                   </div>
                </div>
 
@@ -412,12 +532,18 @@ const AdminEditor = () => {
   );
 };
 
-const EditorInput = ({ label, name, value, icon, onChange, fullWidth }) => (
+const EditorInput = ({ label, name, value, icon, onChange, fullWidth, showUpload, onFileUpload }) => (
   <div className={`space-y-4 ${fullWidth ? 'w-full' : ''} text-left`}>
     <label className="text-[10px] uppercase tracking-[0.4em] text-slate-400 dark:text-slate-600 font-black px-8">{label}</label>
     <div className="relative">
        <div className="absolute left-8 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-700">{icon}</div>
-       <input name={name} value={value} onChange={onChange} className="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 rounded-3xl p-6 pl-16 text-[11px] font-black uppercase tracking-widest text-slate-900 dark:text-white outline-none focus:ring-4 focus:ring-primary/10 transition-all" />
+       <input name={name} value={value} onChange={onChange} className="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 rounded-3xl p-6 pl-16 text-[11px] font-black uppercase tracking-widest text-slate-900 dark:text-white outline-none focus:ring-4 focus:ring-primary/10 transition-all font-['Inter']" />
+       {showUpload && (
+         <label className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all cursor-pointer">
+           <Send className="w-4 h-4" />
+           <input type="file" className="hidden" onChange={onFileUpload} accept="image/*" />
+         </label>
+       )}
     </div>
   </div>
 );

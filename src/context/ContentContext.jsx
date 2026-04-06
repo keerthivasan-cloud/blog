@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import { initialArticles } from '../data/mockArticles';
+import { fetchMarketData } from '../services/marketData';
 
 import API_BASE_URL from '../config';
 
@@ -12,32 +13,46 @@ export const ContentProvider = ({ children }) => {
   const [articles, setArticles] = useState([]);
   const [user, setUser] = useState(null);
   const [darkMode, setDarkMode] = useState(false);
+  const [marketData, setMarketData] = useState([]);
 
   // Initialize theme from localStorage or system preference
   useEffect(() => {
-    const savedTheme = localStorage.getItem('newsforge_theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    if (savedTheme === 'dark' || (!savedTheme && (prefersDark && !savedTheme))) {
-      setDarkMode(true);
+    const savedTheme = localStorage.getItem('theme') || 'dark'; // Default dark
+    const isDark = savedTheme === 'dark';
+    setDarkMode(isDark);
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    if (isDark) {
       document.documentElement.classList.add('dark');
     } else {
-      setDarkMode(false);
       document.documentElement.classList.remove('dark');
     }
   }, []);
 
   const toggleTheme = () => {
     const newVal = !darkMode;
+    const themeStr = newVal ? 'dark' : 'light';
     setDarkMode(newVal);
+    document.documentElement.setAttribute('data-theme', themeStr);
+    localStorage.setItem('theme', themeStr);
+    
     if (newVal) {
       document.documentElement.classList.add('dark');
-      localStorage.setItem('newsforge_theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
-      localStorage.setItem('newsforge_theme', 'light');
     }
   };
+
+  // Market Data Polling Engine (5s)
+  useEffect(() => {
+    const updateMarket = async () => {
+      const data = await fetchMarketData(import.meta.env.VITE_TWELVEDATA_API_KEY);
+      setMarketData(data);
+    };
+
+    updateMarket();
+    const interval = setInterval(updateMarket, 30000); // 30s for free-tier compatibility
+    return () => clearInterval(interval);
+  }, []);
 
   // Initialize articles and user from localStorage
   useEffect(() => {
@@ -47,8 +62,6 @@ export const ContentProvider = ({ children }) => {
         setArticles(res.data);
       } catch (error) {
         console.error("Backend Synchronization Failure", error);
-        // Fallback to mock if backend is down? 
-        // For now, just log.
       }
     };
 
@@ -92,7 +105,8 @@ export const ContentProvider = ({ children }) => {
       logout,
       deleteArticle,
       darkMode,
-      toggleTheme
+      toggleTheme,
+      marketData
     }}>
       {children}
     </ContentContext.Provider>
