@@ -282,138 +282,168 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 app.post("/api/blogs/generate", adminAuth, async (req, res) => {
   const { topic, category: requestedCategory } = req.body;
-  
+
   if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.includes("YOUR")) {
     return res.status(403).json({ message: "Intelligence Node Inactive: GEMINI_API_KEY required in .env" });
   }
 
-  if (!topic) return res.status(400).json({ message: "No synthesis topic provided" });
+  if (!topic || topic.trim().length < 3) {
+    return res.status(400).json({ message: "No synthesis topic provided" });
+  }
+
+  const topicClean = topic.trim();
 
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const prompt = `
-      You are a professional financial and technology journalist writing for a premium platform called "NewsForge".
-      
-      Your task is to write a high-quality blog article for the topic: "${topic}".
-      It must feel like it was written by an experienced human writer — NOT AI.
-      
-      STRICT RULES:
-      1. Writing Style:
-      - Write in a natural, human tone
-      - Avoid robotic or generic phrases
-      - Do NOT use phrases like: "In conclusion", "Overall", "This article explores", "In today's world"
-      - Use a slightly opinionated, confident tone
-      - Make it feel like a real person explaining insights
-      
-      2. Structure:
-      - Strong engaging introduction (hook the reader)
-      - 3 to 5 meaningful sections with clear headings
-      - Each section should provide real value (not filler)
-      - Use short and medium-length paragraphs (avoid long blocks)
-      
-      3. Language:
-      - Mix sentence lengths (short + long)
-      - Avoid repetition
-      - Avoid overuse of keywords
-      - Keep it clean, sharp, and readable
-      
-      4. Content Quality:
-      - Add practical insights, examples, or observations
-      - Avoid generic statements
-      - Make it sound like industry knowledge, not textbook content
-      
-      5. Output Format (STRICT MARKDOWN):
-      ---
-      title: "Create a strong, engaging title"
-      date: "${new Date().toISOString().split('T')[0]}"
-      category: "${requestedCategory || 'Intelligence'}"
-      readTime: "5 min"
-      image: "DYNAMIC_IMAGE_PLACEHOLDER"
-      author: "NewsForge"
-      ---
-      
-      # Title
-      
-      Write the full article here in markdown.
-      Use:
-      - ## for section headings
-      - Clean paragraph spacing
-      - No unnecessary symbols
-      
-      6. Length:
-      - Minimum 700 words
-      - Maximum 1200 words
-      
-      7. IMPORTANT:
-      - Do NOT mention AI
-      - Do NOT sound like AI
-      - Do NOT repeat structure patterns
-      - Avoid fluff — every paragraph should matter
-      - Do NOT wrap the content in backticks (\`\`\`).
-    `;
+
+    const prompt = `You are a skilled blog writer who writes in simple, natural, human-like English.
+
+TOPIC: "${topicClean}"
+
+CRITICAL RULE: Write ONLY about this exact topic. Do NOT generalize, drift, or shift to broader subjects. Stay strictly focused on: "${topicClean}"
+
+YOUR WRITING STYLE:
+- Write like a real person explaining this to someone who is new to the subject
+- Use short sentences. Keep paragraphs to 2–4 lines max
+- Avoid jargon. If you must use a technical term, explain it briefly right after
+- Add a slight personal or opinionated tone — avoid academic or robotic phrasing
+- Use natural phrases like "Let's be honest...", "Here's the reality...", "Most people don't realize..."
+- Every sentence must add value. Cut filler. Cut fluff.
+- Do NOT sound like AI, Wikipedia, or a textbook
+- Do NOT use: "In conclusion", "In today's fast-paced world", "This article explores", "Delve into", "It is worth noting", "Overall", "To summarize"
+
+BLOG STRUCTURE (follow this order):
+1. Title — specific, curiosity-driven, directly tied to the topic
+2. Hook intro — 2–3 engaging lines that immediately pull the reader in
+3. 3–6 main sections using ## H2 headings (choose count based on topic depth)
+4. Use ### H3 subsections if a section covers multiple sub-points
+5. Use bullet points (-) where listing ideas or steps adds clarity
+6. Include real-world examples, comparisons, or relatable scenarios
+7. Conclusion — a clear, memorable takeaway (no generic wrap-ups)
+
+LENGTH: 700–1200 words
+
+IMAGE PROMPT RULES:
+Create a specific image generation prompt for a blog thumbnail that visually matches the exact topic.
+- Style: modern digital art, high contrast, blog thumbnail style
+- Must visually represent the EXACT topic — not a generic tech image
+- Clear subject focus, minimal or no text overlay
+- Vivid and descriptive so an AI image generator can create it
+
+Example — for topic "AI replacing jobs":
+"Futuristic illustration of robots and AI systems at office desks while humans observe from a distance, modern digital art, high contrast, blog thumbnail style, cool blue tones"
+
+OUTPUT FORMAT — STRICT:
+Return ONLY a valid JSON object. No markdown. No backticks. No explanation. Nothing before or after the JSON.
+
+{
+  "title": "Your engaging, topic-specific title",
+  "content": "Full markdown article. Use ## for H2 headings, ### for H3, **bold** for key terms, - for bullet lists. No YAML frontmatter inside content.",
+  "image_prompt": "Your detailed, topic-specific image generation prompt"
+}`;
 
     const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    
-    // Clean potential AI code block markers if they exist
-    const cleanText = text.replace(/^```markdown\n/, "").replace(/\n```$/, "").trim();
-    
-    // Force NewsForge as author in metadata if not present
-    let finalContent = cleanText;
-    if (!cleanText.includes('author: "NewsForge"')) {
-      finalContent = cleanText.replace(/author:\s*".*?"/, 'author: "NewsForge"');
+    const rawText = result.response.text().trim();
+
+    // Strip markdown code fences if the model wraps the response
+    const jsonText = rawText
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/\s*```$/i, "")
+      .trim();
+
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonText);
+    } catch (_) {
+      // Fallback: pull the first JSON object out of a noisy response
+      const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error("AI returned a malformed response. Please retry with a clearer topic.");
+      parsed = JSON.parse(jsonMatch[0]);
     }
 
-    // Extract title & image metadata
-    const titleMatch = finalContent.match(/title:\s*"(.*?)"/);
-    const title = titleMatch ? titleMatch[1] : topic;
-    const slug = title.toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-");
-    
-    // Construct dynamic image from keyword or title for variety
-    // We use a curated list of technological/financial base images and append keywords for Unsplash's dynamic matching
-    const curatedBases = [
-      "1451187580459-43490279c0fa", // Space/Global
-      "1518770660439-4636190af475", // Circuit/Tech
-      "1550751827-4bd374c3f58b", // Cyber
-      "1639734311735-3c910a7620a7", // abstract tech
-      "1611974710112-6e9fa1e7960a", // AI
-      "1526303328154-4bac89c0250b", // Finance
-      "1642390000000-000000000000"  // Pattern (Generic)
-    ];
-    const randomIndex = Math.floor(Math.random() * curatedBases.length);
-    const keyword = title.split(' ').slice(0, 3).join(',');
-    const dynamicImage = `https://images.unsplash.com/photo-${curatedBases[randomIndex]}?q=80&w=1000&auto=format&fit=crop&keyword=${encodeURIComponent(keyword)}`;
-    
-    // Inject the final image URL into metadata
-    finalContent = finalContent.replace("DYNAMIC_IMAGE_PLACEHOLDER", dynamicImage);
+    const { title, content, image_prompt } = parsed;
+
+    if (!title || !content) {
+      throw new Error("Incomplete synthesis response. Please retry with a more specific topic.");
+    }
 
     const date = new Date().toISOString();
+    const dateShort = date.split("T")[0];
+    const slug = title.toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");
 
-    const { error } = await supabase.from('articles').insert([{
+    // Expanded curated Unsplash base images (varied visual styles)
+    const curatedBases = [
+      "1451187580459-43490279c0fa",
+      "1518770660439-4636190af475",
+      "1550751827-4bd374c3f58b",
+      "1639734311735-3c910a7620a7",
+      "1611974710112-6e9fa1e7960a",
+      "1526303328154-4bac89c0250b",
+      "1677442135703-1787eea5ce01",
+      "1620712943543-bcc4688e7485",
+      "1581090464777-f3220bbe1b8b",
+      "1633356122544-f134324a6cee",
+      "1504711434969-e33886168f5c",
+      "1573496359142-b8d87734a5a2",
+      "1485827404703-89b55fcc595e",
+      "1569025690938-a00729c9e1f9"
+    ];
+    const randomBase = curatedBases[Math.floor(Math.random() * curatedBases.length)];
+    const dynamicImage = `https://images.unsplash.com/photo-${randomBase}?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3`;
+
+    // Compose full markdown with YAML frontmatter for storage
+    const safeTitle = title.replace(/"/g, "'");
+    const safeImagePrompt = (image_prompt || "").replace(/"/g, "'");
+    const finalMarkdown = `---
+title: "${safeTitle}"
+date: "${dateShort}"
+category: "${requestedCategory || "Intelligence"}"
+readTime: "5 min"
+image: "${dynamicImage}"
+author: "NewsForge"
+image_prompt: "${safeImagePrompt}"
+---
+
+${content}`;
+
+    // Extract a clean excerpt from body content (no headings/bold markers)
+    const excerptBase = content
+      .replace(/#{1,6}\s+/g, "")
+      .replace(/\*\*/g, "")
+      .replace(/\n+/g, " ")
+      .trim();
+    const excerpt = excerptBase.substring(0, 220) + "...";
+
+    const { error } = await supabase.from("articles").insert([{
       title,
       slug,
-      category: requestedCategory || 'Intelligence',
-      markdownContent: finalContent,
-      excerpt: finalContent.substring(0, 150) + "...",
+      category: requestedCategory || "Intelligence",
+      markdownContent: finalMarkdown,
+      excerpt,
       image: dynamicImage,
-      author: 'NewsForge',
-      status: 'published',
+      author: "NewsForge",
+      status: "published",
       readTime: 5,
       createdAt: date
     }]);
 
     if (error) throw error;
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: "Intelligence node synthesized and published",
-      slug: slug,
-      title: title,
-      author: "NewsForge"
+      slug,
+      title,
+      author: "NewsForge",
+      image_prompt
     });
   } catch (error) {
     console.error("Synthesis Failure:", error);
-    res.status(500).json({ message: "Intelligence Synthesis Failed: " + error.message });
+    const userMessage = error.message?.includes("JSON") || error.message?.includes("malformed") || error.message?.includes("Incomplete")
+      ? error.message
+      : "Intelligence Synthesis Failed: " + error.message;
+    res.status(500).json({ message: userMessage });
   }
 });
 
