@@ -14,11 +14,6 @@ const AdminDashboard = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const navigate = useNavigate();
 
-  if (!user) {
-    navigate('/admin/login');
-    return null;
-  }
-
   const handleDelete = (id) => {
     if (window.confirm('Delete this article permamently?')) {
       deleteArticle(id);
@@ -31,7 +26,7 @@ const AdminDashboard = () => {
     return matchesSearch && matchesCategory;
   });
 
-  const categories = ['All', 'Tech', 'Business', 'Finance', 'Market', 'Commodities'];
+  const categories = ['All', 'Intelligence', 'Tech', 'Business', 'Finance', 'Market', 'Commodities'];
 
   const publishedCount = articles.filter(a => a.status === 'published').length;
   const draftCount = articles.filter(a => a.status === 'draft').length;
@@ -68,6 +63,9 @@ const AdminDashboard = () => {
             <NavItem icon={<FileText className="w-4 h-4" />} label="All Stories" />
             <Link to="/admin/editor/new" className="no-underline text-inherit group">
                <NavItem icon={<Plus className="w-4 h-4" />} label="New Drafting" />
+            </Link>
+            <Link to="/admin/write" className="no-underline text-inherit group">
+               <NavItem icon={<Zap className="w-4 h-4 text-orange-500" />} label="AI Synthesis" />
             </Link>
           </div>
 

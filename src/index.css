@@ -4,61 +4,70 @@
 @tailwind utilities;
 
 :root {
-  /* PRIMARY BRAND (LIGHT) */
-  --accent: #FF6A00;
-  --accent-hover: #FF7F1F;
-  --accent-soft: rgba(255, 106, 0, 0.1);
+  /* ACCENT */
+  --accent: #E84C1E;
+  --accent-hover: #D44418;
+  --accent-soft: rgba(232, 76, 30, 0.10);
 
-  /* SUCCESS / ERROR */
-  --green: #22C55E;
-  --red: #EF4444;
+  /* STATUS */
+  --green: #188A44;
+  --red: #C0392B;
 
-  /* TEXT */
-  --text-primary: #0F172A;
-  --text-secondary: #475569;
-  --text-muted: #94A3B8;
+  /* TYPOGRAPHY — warm, editorial */
+  --text-primary: #1A1A1A;
+  --text-secondary: #404040;
+  --text-muted: #757575;
 
-  /* BACKGROUND */
-  --bg-main: #F8FAFC;
-  --bg-card: #FFFFFF;
-  --bg-soft: #F1F5F9;
+  /* SURFACES — layered depth like Medium */
+  --bg-main: #F2EFE9;        /* warm putty — page canvas */
+  --bg-card: #FFFFFF;         /* pure white — article/card surface */
+  --bg-soft: #EAE7E0;         /* slightly darker — sidebar, inset panels */
+  --bg-elevated: #FAF9F7;     /* just off-white — hover states */
 
-  /* BORDER */
-  --border: #E2E8F0;
+  /* BORDERS */
+  --border: #D9D6CE;
+  --border-soft: #ECE9E2;
 
-  /* SHADOW */
-  --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  /* SHADOWS — gentle editorial depth */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow: 0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.10), 0 4px 10px rgba(0,0,0,0.05);
 
-  /* UTILS */
+  /* RADIUS */
   --radius: 12px;
 }
 
 [data-theme="dark"] {
-  /* PRIMARY BRAND (DARK) */
+  /* ACCENT */
   --accent: #FF6A00;
   --accent-hover: #FF7F1F;
   --accent-soft: rgba(255, 106, 0, 0.15);
 
-  /* SUCCESS / ERROR */
+  /* STATUS */
   --green: #22C55E;
   --red: #EF4444;
 
-  /* TEXT - High Contrast for Readability */
+  /* TYPOGRAPHY */
   --text-primary: #F1F5F9;
   --text-secondary: #CBD5E1;
   --text-muted: #94A3B8;
 
-  /* BACKGROUND */
+  /* SURFACES */
   --bg-main: #05070F;
   --bg-card: #0B1220;
   --bg-soft: #0F172A;
+  --bg-elevated: #111827;
 
-  /* BORDER */
+  /* BORDERS */
   --border: rgba(255, 255, 255, 0.08);
+  --border-soft: rgba(255, 255, 255, 0.04);
 
-  /* SHADOW */
+  /* SHADOWS */
+  --shadow-sm: 0 1px 4px rgba(0,0,0,0.4);
   --shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.8);
 }
+
 
 * {
   margin: 0;
@@ -114,28 +123,46 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 16px;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-sm);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 [data-theme="dark"] .card {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  background: rgba(11, 18, 32, 0.6); /* Glassy Bloomberg Feel */
+  background: rgba(11, 18, 32, 0.6);
+  box-shadow: var(--shadow);
 }
 
 .card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.4);
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg);
   border-color: var(--accent);
 }
 
+/* NAVBAR */
 .navbar {
-  background: rgba(5, 7, 15, 0.85); /* Slightly more transparent */
+  background: rgba(5, 7, 15, 0.85);
   border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(12px); /* Reduced from 20px */
+  backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   z-index: 100;
+}
+
+/* Light mode navbar — only when NOT in dark mode */
+:root:not([data-theme="dark"]) .navbar {
+  background: rgba(242, 239, 233, 0.92);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Light mode gradient text */
+:root:not([data-theme="dark"]) .gradient-text {
+  background: linear-gradient(135deg, var(--accent) 0%, #F59E0B 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .btn-primary {
@@ -267,9 +294,10 @@ h1, h2, h3, h4, h5, h6 {
   margin: 3.5rem 0;
   padding: 2.5rem 3.5rem;
   background: var(--bg-soft);
-  border-left: 8px solid var(--accent);
-  border-radius: 0 2rem 2rem 0;
+  border-left: 6px solid var(--accent);
+  border-radius: 0 1.5rem 1.5rem 0;
   font-style: italic;
+  box-shadow: var(--shadow-sm);
 }
 
 .prose-system blockquote p {

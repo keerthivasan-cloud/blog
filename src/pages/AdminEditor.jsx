@@ -49,11 +49,12 @@ const AdminEditor = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSaving(true);
+    const authHeader = { Authorization: `Bearer admin123` };
     try {
       if (isNew) {
-        await axios.post(`${API_BASE_URL}/articles`, formData);
+        await axios.post(`${API_BASE_URL}/articles`, formData, { headers: authHeader });
       } else {
-        await axios.put(`${API_BASE_URL}/articles/${formData._id}`, formData);
+        await axios.put(`${API_BASE_URL}/articles/${formData._id}`, formData, { headers: authHeader });
       }
       navigate('/admin/dashboard');
     } catch (error) {
@@ -77,7 +78,7 @@ const AdminEditor = () => {
 
     try {
       const res = await axios.post(`${API_BASE_URL}/upload`, uploadData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer admin123` }
       });
       setFormData(prev => ({ ...prev, image: res.data.url }));
     } catch (err) {
@@ -260,6 +261,12 @@ const AdminEditor = () => {
                </button>
              ))}
           </div>
+          <Link
+            to="/admin/write"
+            className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-orange-600/10 border border-orange-600/20 text-orange-500 text-xs font-black uppercase tracking-widest hover:bg-orange-600 hover:text-white transition-all no-underline"
+          >
+            <Zap className="w-4 h-4" /> AI Synthesis
+          </Link>
           <button onClick={handleSubmit} disabled={isSaving} className="primary-btn flex items-center gap-3 px-8 py-3 rounded-2xl shadow-[0_10px_30px_rgba(249,115,22,0.2)] disabled:opacity-50">
             {isSaving ? <Sparkles className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} 
             {isNew ? 'Initialize Archive' : 'Sync Changes'}
@@ -294,7 +301,7 @@ const AdminEditor = () => {
                      <div className="space-y-4 text-left">
                         <label className="text-[10px] uppercase tracking-[0.4em] text-slate-400 dark:text-slate-600 font-black px-4">Segment Node</label>
                         <select name="category" value={formData.category} onChange={handleInputChange} className="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 rounded-2xl p-6 text-[11px] font-black uppercase tracking-widest outline-none appearance-none cursor-pointer dark:text-white">
-                          {['Tech', 'Business', 'Finance', 'Global-Market', 'Commodities'].map(cat => <option key={cat}>{cat}</option>)}
+                          {['Intelligence', 'Tech', 'Business', 'Finance', 'Global-Market', 'Commodities'].map(cat => <option key={cat}>{cat}</option>)}
                         </select>
                      </div>
                      <div className="space-y-4 text-left">

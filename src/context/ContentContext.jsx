@@ -54,7 +54,7 @@ export const ContentProvider = ({ children }) => {
     return () => clearInterval(interval);
   }, []);
 
-  // Initialize articles and user from localStorage
+  // Fetch articles from backend & poll every 60s for live updates
   useEffect(() => {
     const fetchArticles = async () => {
       try {
@@ -66,12 +66,25 @@ export const ContentProvider = ({ children }) => {
     };
 
     fetchArticles();
+    const interval = setInterval(fetchArticles, 60000); // live refresh every 60s
 
     const savedUser = localStorage.getItem('newsforge_user');
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
+
+    return () => clearInterval(interval);
   }, []);
+
+  const refreshArticles = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/articles`);
+      setArticles(res.data);
+    } catch (error) {
+      console.error("Manual Refresh Failure", error);
+    }
+  };
+
 
   const deleteArticle = async (id) => {
     try {
@@ -104,6 +117,7 @@ export const ContentProvider = ({ children }) => {
       login,
       logout,
       deleteArticle,
+      refreshArticles,
       darkMode,
       toggleTheme,
       marketData

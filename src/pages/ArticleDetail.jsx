@@ -13,6 +13,26 @@ import {
 import { ReadingProgressBar, TableOfContents, BlockRenderer } from '../components/ArticlePageComponents';
 import API_BASE_URL from '../config';
 
+// Simple markdown-to-HTML converter for AI-generated markdownContent
+const renderMarkdown = (md) => {
+  if (!md) return '';
+  return md
+    .replace(/^---[\s\S]*?---\n*/m, '')           // strip frontmatter
+    .replace(/^#{1}\s+(.+)$/gm, '<h1>$1</h1>')
+    .replace(/^#{2}\s+(.+)$/gm, '<h2>$1</h2>')
+    .replace(/^#{3}\s+(.+)$/gm, '<h3>$1</h3>')
+    .replace(/^\>\s+(.+)$/gm, '<blockquote>$1</blockquote>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^[-*]\s+(.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="width:100%;border-radius:1rem;margin:2rem 0" />')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/^(?!<[h|b|u|l|i])/gm, '')
+    .replace(/^(.+)$/gm, (line) => line.startsWith('<') ? line : `<p>${line}</p>`);
+};
+
+
 const ArticleDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -280,7 +300,14 @@ const ArticleDetail = () => {
                       exit={{ opacity: 0, x: -20 }} 
                       className="prose-system"
                     >
-                      <BlockRenderer blocks={article.blocks} />
+                      {/* Render block array if available, else fall back to markdown */}
+                      {Array.isArray(article.content) && article.content.length > 0 ? (
+                        <BlockRenderer blocks={article.content} />
+                      ) : article.markdownContent ? (
+                        <div dangerouslySetInnerHTML={{ __html: renderMarkdown(article.markdownContent) }} />
+                      ) : (
+                        <p style={{ color: 'var(--text-muted)' }}>No content available.</p>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -328,7 +355,7 @@ const ArticleDetail = () => {
 
             <aside className="hidden lg:block lg:col-span-4 self-start sticky top-40">
               <div className="space-y-20">
-                <div className="card p-12 rounded-[3.5rem]"><TableOfContents content={article.blocks || []} /></div>
+                <div className="card p-12 rounded-[3.5rem]"><TableOfContents content={Array.isArray(article.content) ? article.content : []} /></div>
                 <div className="px-6">
                    <div className="flex items-center gap-3 mb-12">
                       <TrendingUp className="w-5 h-5" style={{ color: 'var(--accent)' }} /><h4 className="text-sm font-black uppercase tracking-[0.2em] title">Global Pulse</h4>

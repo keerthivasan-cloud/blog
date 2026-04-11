@@ -109,7 +109,6 @@ export const Navbar = () => {
         >
           <Search style={{ width: '1.25rem', height: '1.25rem' }} />
         </button>
-        <Link to="/write" className="btn-primary">Write</Link>
       </div>
     </nav>
     <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />

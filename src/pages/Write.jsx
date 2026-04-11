@@ -9,6 +9,7 @@ import axios from 'axios';
 import { Navbar, Footer } from '../components/Layout';
 import { Link, useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config';
+import { useContent } from '../context/ContentContext';
 
 const Write = () => {
   const [activeMode, setActiveMode] = useState("Catalyst"); // Catalyst (AI) or Architecture (Manual)
@@ -16,6 +17,7 @@ const Write = () => {
   const [generating, setGenerating] = useState(false);
   const [success, setSuccess] = useState(null);
   const navigate = useNavigate();
+  const { user, refreshArticles } = useContent();
 
   // Architecture Mode State
   const [formData, setFormData] = useState({
@@ -34,9 +36,12 @@ const Write = () => {
     setGenerating(true);
     setSuccess(null);
     try {
-      const res = await axios.post(`${API_BASE_URL}/blogs/generate`, { topic: genTopic });
+      const res = await axios.post(`${API_BASE_URL}/blogs/generate`, { topic: genTopic }, {
+        headers: { Authorization: `Bearer admin123` }
+      });
       setSuccess(res.data);
       setGenTopic("");
+      refreshArticles(); // live refresh global article list
     } catch (err) {
       alert(err.response?.data?.message || "Synthesis Failed");
     } finally {
@@ -49,8 +54,11 @@ const Write = () => {
     if (!formData.title) return alert("Title required for publication");
     setIsSaving(true);
     try {
-      const res = await axios.post(`${API_BASE_URL}/articles`, formData);
+      const res = await axios.post(`${API_BASE_URL}/articles`, formData, {
+        headers: { Authorization: `Bearer admin123` }
+      });
       setSuccess(res.data);
+      refreshArticles(); // live refresh global article list
     } catch (err) {
       alert("Manual Publication Failure");
     } finally {
@@ -147,7 +155,7 @@ const Write = () => {
                              <div className="space-y-3">
                                 <label className="text-[9px] font-black uppercase tracking-widest opacity-40 ml-4">Segment</label>
                                 <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-[10px] font-black uppercase outline-none appearance-none cursor-pointer">
-                                   {["Tech", "Finance", "Business", "Markets", "Commodities"].map(c => <option key={c} value={c}>{c}</option>)}
+                                   {["Intelligence", "Tech", "Finance", "Business", "Markets", "Commodities"].map(c => <option key={c} value={c}>{c}</option>)}
                                 </select>
                              </div>
                              <div className="space-y-3">

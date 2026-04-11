@@ -30,9 +30,17 @@ const Home = () => {
 
     axios.get(`${API_BASE_URL}/articles?${params.toString()}`)
       .then(res => {
-        setArticles(res.data);
+        console.log("Nexus Dispatch Received:", res.data);
+        setArticles(Array.isArray(res.data) ? res.data : []);
       })
-      .catch(err => console.error("Nexus Intelligence Failure:", err))
+      .catch(err => {
+        console.error("Nexus Intelligence Failure:", err);
+        if (err.response) {
+          console.error("Server responded with:", err.response.status, err.response.data);
+        } else if (err.request) {
+          console.error("No response received from terminal at", API_BASE_URL);
+        }
+      })
       .finally(() => setLoading(false));
   }, [activeCategory, activeTag]);
 
@@ -43,6 +51,7 @@ const Home = () => {
   }, []);
 
   const categories = [
+    { name: "Intelligence", icon: Sparkles },
     { name: "Tech", icon: Zap },
     { name: "Business", icon: Newspaper },
     { name: "Finance", icon: TrendingUp },
@@ -55,8 +64,8 @@ const Home = () => {
     : articles.filter(a => a.category === activeCategory);
 
   const featured = filteredArticles[0] || null;
-  const trendingList = articles.slice(1, 6);
-  const latestGrid = filteredArticles.slice(1, 50);
+  const trendingList = articles.slice(0, 6);
+  const latestGrid = filteredArticles.slice(0, 50);
 
   const SectionHeader = ({ title, icon: Icon, href, subtitle }) => (
     <div className="flex flex-col mb-16 text-left">

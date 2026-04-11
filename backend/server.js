@@ -1,55 +1,76 @@
 const express = require("express");
-const mongoose = require("mongoose");
+const { createClient } = require("@supabase/supabase-js");
 const cors = require("cors");
 require("dotenv").config();
 
-const Article = require("./models/Article");
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
-
-// Ensure uploads directory exists
-const uploadDir = path.join(__dirname, "uploads");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:4173',
+    'http://127.0.0.1:4173',
+    'https://newsforge.in',
+    /\.vercel\.app$/
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 app.use(express.json());
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// --- MULTER CONFIG ---
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/"),
-  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
-});
+
+// --- MULTER CONFIG (Memory Storage) ---
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
+// --- AUTH MIDDLEWARE ---
+const adminAuth = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  const adminSecret = process.env.ADMIN_PASSWORD || 'admin123';
+  if (!authHeader || authHeader !== `Bearer ${adminSecret}`) {
+    return res.status(403).json({ message: "Network Integrity: Invalid Terminal Key." });
+  }
+  next();
+};
+
 const PORT = process.env.PORT || 5001;
-const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/newsforge";
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const FRONTEND_URL = process.env.FRONTEND_URL || "https://newsforge.in";
 
-mongoose.connect(MONGO_URI)
-  .then(() => console.log("NewsForge Database Connected Successfully"))
-  .catch(err => console.error("Database Connection Error:", err));
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
 
-const engine = require("./markdownEngine");
+if (!supabaseUrl || !supabaseKey) {
+  console.warn("WARNING: Supabase keys are missing from environment variables.");
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
+console.log("Supabase Client Initialized");
 
 // --- API ROUTES ---
 
-// --- ARTICLE INTELLIGENCE ROUTER ---
 const articleRouter = express.Router();
 
-// I. SPECIFIC ACTIONS (Priority High)
-articleRouter.get("/trending", (req, res) => {
-  const posts = engine.getPosts().slice(0, 6); // Mock trending as top 6 sorted by date
-  res.json(posts);
+// I. SPECIFIC ACTIONS
+articleRouter.get("/trending", async (req, res) => {
+  try {
+    const { data: posts, error } = await supabase
+      .from('articles')
+      .select('*')
+      .eq('status', 'published')
+      .order('createdAt', { ascending: false })
+      .limit(6);
+    if (error) throw error;
+    res.json(posts || []);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
-articleRouter.post("/:id/view", (req, res) => {
-  // Keeping endpoint for frontend compatibility, though stats aren't persisted in MD yet
+articleRouter.post("/:id/view", async (req, res) => {
   res.json({ success: true, message: "Intelligence node accessed" });
 });
 
@@ -58,38 +79,79 @@ articleRouter.post("/:id/react", (req, res) => {
 });
 
 // II. BULK OPERATIONS
-articleRouter.get("/", (req, res) => {
-  const { category, tag } = req.query;
-  let posts = engine.getPosts();
-  
-  if (category && category !== 'All') {
-    posts = posts.filter(p => (p.category || '').toLowerCase() === category.toLowerCase());
+articleRouter.get("/", async (req, res) => {
+  try {
+    const { category, tag } = req.query;
+    
+    let query = supabase.from('articles').select('*').eq('status', 'published').order('createdAt', { ascending: false });
+    
+    if (category && category !== 'All') {
+      query = query.ilike('category', category);
+    }
+    
+    const { data: posts, error } = await query;
+    if (error) throw error;
+    
+    let filteredPosts = posts || [];
+    
+    if (tag) {
+      const t = tag.toLowerCase();
+      filteredPosts = filteredPosts.filter(p => {
+        const tags = p.tags || [];
+        return tags.some(s => s.toLowerCase() === t);
+      });
+    }
+    
+    res.json(filteredPosts);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
-
-  if (tag) {
-    const t = tag.toLowerCase();
-    posts = posts.filter(p => {
-      const tags = p.tags || p.seo?.keywords?.split(',').map(s => s.trim().toLowerCase()) || [];
-      return tags.includes(t);
-    });
-  }
-
-  res.json(posts);
 });
 
-articleRouter.get("/trending-tags", (req, res) => {
-  res.json(engine.getTrendingTags());
+articleRouter.get("/trending-tags", async (req, res) => {
+  try {
+    const { data: posts, error } = await supabase.from('articles').select('tags').eq('status', 'published');
+    if (error) throw error;
+    
+    const tagFreq = new Map();
+    (posts || []).forEach(post => {
+      (post.tags || []).forEach(tag => {
+        if (!tag) return;
+        const normalized = tag.toLowerCase();
+        if (normalized.length < 3) return;
+        tagFreq.set(normalized, (tagFreq.get(normalized) || 0) + 1);
+      });
+    });
+
+    const tagsArray = Array.from(tagFreq.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(entry => ({ name: entry[0], count: entry[1] }));
+      
+    res.json(tagsArray);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 // III. SLUG RETRIEVAL
-articleRouter.get("/:slug", (req, res) => {
-  const post = engine.getPostBySlug(req.params.slug);
-  if (!post) return res.status(404).json({ message: "Intelligence node not found" });
-  res.json(post);
+articleRouter.get("/:slug", async (req, res) => {
+  try {
+    const { data: post, error } = await supabase
+      .from('articles')
+      .select('*')
+      .eq('slug', req.params.slug)
+      .single();
+      
+    if (error || !post) return res.status(404).json({ message: "Intelligence node not found" });
+    res.json(post);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 // --- MANUAL ARTICLE SYNTHESIS ---
-articleRouter.post("/", async (req, res) => {
+articleRouter.post("/", adminAuth, async (req, res) => {
   try {
     const { title, category, author, readTime, image, excerpt, content, slug: customSlug } = req.body;
     
@@ -98,9 +160,9 @@ articleRouter.post("/", async (req, res) => {
     }
 
     const slug = customSlug || title.toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-");
-    const date = new Date().toISOString().split('T')[0];
+    const date = new Date().toISOString();
 
-    // Block-to-Markdown Conversion Engine
+    // Block-to-Markdown Conversion
     let mdContent = `---\ntitle: "${title}"\ndate: "${date}"\ncategory: "${category || 'Tech'}"\nreadTime: "${readTime || 5} min"\nimage: "${image || ''}"\nexcerpt: "${excerpt || ''}"\nauthor: "NewsForge"\n---\n\n# ${title}\n\n`;
 
     if (Array.isArray(content)) {
@@ -119,8 +181,22 @@ articleRouter.post("/", async (req, res) => {
       mdContent += content;
     }
 
-    const filePath = path.join(__dirname, "content", `${slug}.md`);
-    fs.writeFileSync(filePath, mdContent);
+    // Insert into Supabase
+    const { error } = await supabase.from('articles').insert([{
+      title,
+      slug,
+      category: category || 'Tech',
+      content: Array.isArray(content) ? content : null,
+      markdownContent: mdContent,
+      excerpt: excerpt || '',
+      image: image || '',
+      author: author || 'NewsForge',
+      status: 'published',
+      readTime: readTime || 5,
+      createdAt: date
+    }]);
+
+    if (error) throw error;
 
     res.json({ 
       success: true, 
@@ -136,27 +212,39 @@ articleRouter.post("/", async (req, res) => {
 
 // Mount specialized router
 app.use("/api/articles", articleRouter);
-app.use("/api/blogs", articleRouter); // Alias as requested for blogs specific endpoint
+app.use("/api/blogs", articleRouter); // Alias
 
 // Search Articles
-app.get("/api/search", (req, res) => {
-  const { q } = req.query;
-  if (!q) return res.json([]);
-  const results = engine.searchPosts(q);
-  res.json(results);
+app.get("/api/search", async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q) return res.json([]);
+    const { data: articles, error } = await supabase
+      .from('articles')
+      .select('*')
+      .eq('status', 'published')
+      .or(`title.ilike.%${q}%,category.ilike.%${q}%,excerpt.ilike.%${q}%`)
+      .order('createdAt', { ascending: false })
+      .limit(10);
+      
+    if (error) throw error;
+    res.json(articles || []);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
-
 
 // Sitemap Generator
 app.get("/sitemap.xml", async (req, res) => {
   try {
-    const articles = await Article.find({ status: "published" });
-    const domain = FRONTEND_URL; // Consistent with environment configuration
+    const { data: articles, error } = await supabase.from('articles').select('*').eq('status', 'published');
+    if (error) throw error;
+    const domain = FRONTEND_URL; 
 
-    const urls = articles.map(a => `
+    const urls = (articles || []).map(a => `
     <url>
       <loc>${domain}/${(a.category || 'intelligence').toLowerCase().replace(/\s+/g, '-')}/${a.slug}</loc>
-      <lastmod>${new Date(a.updatedAt || a.createdAt).toISOString()}</lastmod>
+      <lastmod>${new Date(a.createdAt).toISOString()}</lastmod>
       <priority>0.8</priority>
     </url>`).join("");
 
@@ -176,37 +264,11 @@ app.get("/sitemap.xml", async (req, res) => {
   }
 });
 
-// --- NEW CAPABILITIES: SEARCH & UPLOAD ---
-
-// Search Articles
-app.get("/api/search", async (req, res) => {
-  try {
-    const { q } = req.query;
-    if (!q) return res.json([]);
-    const articles = await Article.find({
-      $and: [
-        { status: "published" },
-        {
-          $or: [
-            { title: { $regex: q, $options: "i" } },
-            { category: { $regex: q, $options: "i" } },
-            { excerpt: { $regex: q, $options: "i" } }
-          ]
-        }
-      ]
-    }).sort({ createdAt: -1 }).limit(10);
-    
-    res.json(articles);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
 // --- AI INTELLIGENCE SYNTHESIS ---
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-app.post("/api/blogs/generate", async (req, res) => {
+app.post("/api/blogs/generate", adminAuth, async (req, res) => {
   const { topic } = req.body;
   
   if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.includes("YOUR")) {
@@ -308,9 +370,23 @@ app.post("/api/blogs/generate", async (req, res) => {
        finalContent = finalContent.replace(/readTime:\s*".*?"/, (m) => `${m}\nimage: "${dynamicImage}"`);
     }
 
-    const filePath = path.join(__dirname, "content", `${slug}.md`);
-    fs.writeFileSync(filePath, finalContent);
-    
+    const date = new Date().toISOString();
+
+    const { error } = await supabase.from('articles').insert([{
+      title,
+      slug,
+      category: 'Intelligence',
+      markdownContent: finalContent,
+      excerpt: finalContent.substring(0, 150) + "...",
+      image: dynamicImage,
+      author: 'NewsForge',
+      status: 'published',
+      readTime: 5,
+      createdAt: date
+    }]);
+
+    if (error) throw error;
+
     res.json({ 
       success: true, 
       message: "Intelligence node synthesized and published",
@@ -324,10 +400,28 @@ app.post("/api/blogs/generate", async (req, res) => {
   }
 });
 
-// File Upload
-app.post("/api/upload", upload.single("image"), (req, res) => {
+// File Upload to Supabase Storage
+app.post("/api/upload", adminAuth, upload.single("image"), async (req, res) => {
   if (!req.file) return res.status(400).json({ message: "No file uploaded" });
-  res.json({ url: `${BASE_URL}/uploads/${req.file.filename}` });
+  
+  try {
+     const safeName = req.file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '');
+     const fileName = `${Date.now()}-${safeName}`;
+     
+     const { data, error } = await supabase.storage
+       .from('images')
+       .upload(fileName, req.file.buffer, {
+          contentType: req.file.mimetype
+       });
+       
+     if (error) throw error;
+     
+     const { data: publicUrlData } = supabase.storage.from('images').getPublicUrl(fileName);
+     res.json({ url: publicUrlData.publicUrl });
+  } catch (error) {
+     console.error("Storage Upload Failure:", error);
+     res.status(500).json({ message: "Storage Upload Failed: " + error.message });
+  }
 });
 
 // --- GLOBAL CATCH-ALL & DEBUGGER ---
