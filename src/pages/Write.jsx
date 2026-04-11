@@ -14,8 +14,10 @@ import { useContent } from '../context/ContentContext';
 const Write = () => {
   const [activeMode, setActiveMode] = useState("Catalyst"); // Catalyst (AI) or Architecture (Manual)
   const [genTopic, setGenTopic] = useState("");
+  const [genCategory, setGenCategory] = useState("Intelligence");
   const [generating, setGenerating] = useState(false);
   const [success, setSuccess] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
   const navigate = useNavigate();
   const { user, refreshArticles } = useContent();
 
@@ -36,7 +38,10 @@ const Write = () => {
     setGenerating(true);
     setSuccess(null);
     try {
-      const res = await axios.post(`${API_BASE_URL}/blogs/generate`, { topic: genTopic }, {
+      const res = await axios.post(`${API_BASE_URL}/blogs/generate`, { 
+        topic: genTopic,
+        category: genCategory
+      }, {
         headers: { Authorization: `Bearer admin123` }
       });
       setSuccess(res.data);
@@ -63,6 +68,38 @@ const Write = () => {
       alert("Manual Publication Failure");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleFileUpload = async (event, blockIdx = null) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formDataUpload = new FormData();
+    formDataUpload.append('image', file);
+
+    try {
+      const res = await axios.post(`${API_BASE_URL}/upload`, formDataUpload, {
+        headers: { 
+          Authorization: `Bearer admin123`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      const fileUrl = res.data.fileUrl;
+      
+      if (blockIdx !== null) {
+        // Update specific block image
+        updateBlock(blockIdx, { url: fileUrl });
+      } else {
+        // Update main header image
+        setFormData(prev => ({ ...prev, image: fileUrl }));
+      }
+    } catch (err) {
+      alert("Asset Upload Failed");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -127,14 +164,26 @@ const Write = () => {
                     <motion.div key="cat" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="card p-12 md:p-20 rounded-[4rem] relative overflow-hidden bg-white/[0.01]">
                        <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none"><Sparkles className="w-60 h-60" /></div>
                        <div className="relative z-10 space-y-12">
-                          <div className="space-y-4">
-                             <label className="text-[10px] font-black uppercase tracking-[0.5em] ml-2 opacity-40">Synthesis Target Topic</label>
-                             <textarea 
-                               value={genTopic}
-                               onChange={(e) => setGenTopic(e.target.value)}
-                               placeholder="Input technical parameter for AI synthesis..."
-                               className="w-full bg-white/5 border border-white/10 rounded-[2.5rem] px-10 py-10 text-lg font-bold placeholder:opacity-20 focus:border-orange-500 transition-all outline-none resize-none h-60"
-                             />
+                          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-end">
+                             <div className="md:col-span-8 space-y-4">
+                                <label className="text-[10px] font-black uppercase tracking-[0.5em] ml-2 opacity-40">Synthesis Target Topic</label>
+                                <textarea 
+                                  value={genTopic}
+                                  onChange={(e) => setGenTopic(e.target.value)}
+                                  placeholder="Input technical parameter for AI synthesis..."
+                                  className="w-full bg-white/5 border border-white/10 rounded-[2.5rem] px-10 py-8 text-lg font-bold placeholder:opacity-20 focus:border-orange-500 transition-all outline-none resize-none h-40"
+                                />
+                             </div>
+                             <div className="md:col-span-4 space-y-4">
+                                <label className="text-[10px] font-black uppercase tracking-[0.5em] ml-2 opacity-40">Target Category</label>
+                                <select 
+                                  value={genCategory} 
+                                  onChange={(e) => setGenCategory(e.target.value)} 
+                                  className="w-full bg-white/5 border border-white/10 rounded-[2rem] px-8 py-8 text-[10px] font-black uppercase outline-none appearance-none cursor-pointer focus:border-orange-500"
+                                >
+                                   {["Intelligence", "Tech", "Finance", "Business", "Markets", "Commodities"].map(c => <option key={c} value={c}>{c}</option>)}
+                                </select>
+                             </div>
                           </div>
                           <button onClick={handleGenerate} disabled={generating || !genTopic} className={`w-full py-8 rounded-3xl font-black uppercase text-xs tracking-[0.4em] transition-all flex items-center justify-center gap-4 cursor-pointer border-0 shadow-2xl ${generating ? 'opacity-50 bg-orange-600/50' : 'bg-orange-600 hover:bg-orange-500'}`} style={{ color: 'white' }}>
                              {generating ? <>Synthesis In-Progress <Loader2 className="w-5 h-5 animate-spin" /></> : <>Initiate Protocol <Zap className="w-5 h-5 fill-white" /></>}
@@ -151,7 +200,7 @@ const Write = () => {
                             className="w-full bg-transparent border-none text-5xl font-black uppercase tracking-tighter outline-none p-0 placeholder:opacity-10" 
                             placeholder="ARTICLE HEADLINE..." 
                           />
-                          <div className="grid grid-cols-2 gap-8">
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                              <div className="space-y-3">
                                 <label className="text-[9px] font-black uppercase tracking-widest opacity-40 ml-4">Segment</label>
                                 <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-[10px] font-black uppercase outline-none appearance-none cursor-pointer">
@@ -159,8 +208,14 @@ const Write = () => {
                                 </select>
                              </div>
                              <div className="space-y-3">
-                                <label className="text-[9px] font-black uppercase tracking-widest opacity-40 ml-4">Read Est (M)</label>
-                                <input type="number" value={formData.readTime} onChange={(e) => setFormData({...formData, readTime: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-[10px] font-black outline-none" />
+                                <label className="text-[9px] font-black uppercase tracking-widest opacity-40 ml-4">Featured Image</label>
+                                <div className="flex gap-4">
+                                   <input value={formData.image} onChange={(e) => setFormData({...formData, image: e.target.value})} className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-5 text-[10px] font-black outline-none" placeholder="Image URL..." />
+                                   <label className="cursor-pointer bg-white/5 hover:bg-orange-600 transition-all rounded-2xl p-5 border border-white/10">
+                                      {isUploading ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <LucideImage className="w-4 h-4 text-white" />}
+                                      <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e)} disabled={isUploading} />
+                                   </label>
+                                </div>
                              </div>
                           </div>
                        </div>
@@ -186,7 +241,13 @@ const Write = () => {
                                 {block.type === 'quote' && <textarea value={block.text} onChange={(e) => updateBlock(idx, {text: e.target.value})} className="w-full bg-transparent border-none text-2xl font-black italic outline-none resize-none placeholder:opacity-10 text-white" placeholder="Strategic quote..." rows="3" />}
                                 {block.type === 'highlight' && <textarea value={block.text} onChange={(e) => updateBlock(idx, {text: e.target.value})} className="w-full bg-transparent border-none text-lg font-black text-orange-500 outline-none resize-none placeholder:opacity-10" placeholder="Technical insight..." rows="3" />}
                                 {block.type === 'image' && <div className="space-y-6">
-                                   <input value={block.url} onChange={(e) => updateBlock(idx, {url: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-[10px] font-black outline-none" placeholder="IMAGE URL..." />
+                                   <div className="flex gap-4">
+                                      <input value={block.url} onChange={(e) => updateBlock(idx, {url: e.target.value})} className="flex-1 bg-white/5 border border-white/10 rounded-xl p-4 text-[10px] font-black outline-none" placeholder="IMAGE URL..." />
+                                      <label className="cursor-pointer bg-white/5 hover:bg-orange-600 transition-all rounded-xl p-4 border border-white/10 text-white">
+                                         {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                                         <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, idx)} disabled={isUploading} />
+                                      </label>
+                                   </div>
                                    <input value={block.alt} onChange={(e) => updateBlock(idx, {alt: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-[10px] font-black outline-none" placeholder="ALT TEXT..." />
                                 </div>}
                              </div>

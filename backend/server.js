@@ -281,7 +281,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 app.post("/api/blogs/generate", adminAuth, async (req, res) => {
-  const { topic } = req.body;
+  const { topic, category: requestedCategory } = req.body;
   
   if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.includes("YOUR")) {
     return res.status(403).json({ message: "Intelligence Node Inactive: GEMINI_API_KEY required in .env" });
@@ -326,9 +326,9 @@ app.post("/api/blogs/generate", adminAuth, async (req, res) => {
       ---
       title: "Create a strong, engaging title"
       date: "${new Date().toISOString().split('T')[0]}"
-      category: "Tech or Finance or relevant"
+      category: "${requestedCategory || 'Intelligence'}"
       readTime: "5 min"
-      image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1000"
+      image: "DYNAMIC_IMAGE_PLACEHOLDER"
       author: "NewsForge"
       ---
       
@@ -369,25 +369,30 @@ app.post("/api/blogs/generate", adminAuth, async (req, res) => {
     const title = titleMatch ? titleMatch[1] : topic;
     const slug = title.toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-");
     
-    // Construct dynamic image from keyword or title
-    const keywordMatch = finalContent.match(/imageKeyword:\s*"(.*?)"/);
-    const keyword = keywordMatch ? keywordMatch[1] : title.split(' ').slice(0, 3).join(' ');
-    const dynamicImage = `https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1000&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&keyword=${encodeURIComponent(keyword)}`;
+    // Construct dynamic image from keyword or title for variety
+    // We use a curated list of technological/financial base images and append keywords for Unsplash's dynamic matching
+    const curatedBases = [
+      "1451187580459-43490279c0fa", // Space/Global
+      "1518770660439-4636190af475", // Circuit/Tech
+      "1550751827-4bd374c3f58b", // Cyber
+      "1639734311735-3c910a7620a7", // abstract tech
+      "1611974710112-6e9fa1e7960a", // AI
+      "1526303328154-4bac89c0250b", // Finance
+      "1642390000000-000000000000"  // Pattern (Generic)
+    ];
+    const randomIndex = Math.floor(Math.random() * curatedBases.length);
+    const keyword = title.split(' ').slice(0, 3).join(',');
+    const dynamicImage = `https://images.unsplash.com/photo-${curatedBases[randomIndex]}?q=80&w=1000&auto=format&fit=crop&keyword=${encodeURIComponent(keyword)}`;
     
-    // Inject the final image URL into metadata and remove imageKeyword
-    if (finalContent.includes('imageKeyword:')) {
-       finalContent = finalContent.replace(/imageKeyword:\s*".*?"/, `image: "${dynamicImage}"`);
-    } else if (!finalContent.includes('image:')) {
-       // Insert after readTime if missing
-       finalContent = finalContent.replace(/readTime:\s*".*?"/, (m) => `${m}\nimage: "${dynamicImage}"`);
-    }
+    // Inject the final image URL into metadata
+    finalContent = finalContent.replace("DYNAMIC_IMAGE_PLACEHOLDER", dynamicImage);
 
     const date = new Date().toISOString();
 
     const { error } = await supabase.from('articles').insert([{
       title,
       slug,
-      category: 'Intelligence',
+      category: requestedCategory || 'Intelligence',
       markdownContent: finalContent,
       excerpt: finalContent.substring(0, 150) + "...",
       image: dynamicImage,
