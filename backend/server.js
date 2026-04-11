@@ -373,22 +373,6 @@ Return ONLY a valid JSON object. No markdown. No backticks. No explanation. Noth
     const slug = title.toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");
 
     // Expanded curated Unsplash base images (varied visual styles)
-    const curatedBases = [
-      "1451187580459-43490279c0fa",
-      "1518770660439-4636190af475",
-      "1550751827-4bd374c3f58b",
-      "1639734311735-3c910a7620a7",
-      "1611974710112-6e9fa1e7960a",
-      "1526303328154-4bac89c0250b",
-      "1677442135703-1787eea5ce01",
-      "1620712943543-bcc4688e7485",
-      "1581090464777-f3220bbe1b8b",
-      "1633356122544-f134324a6cee",
-      "1504711434969-e33886168f5c",
-      "1573496359142-b8d87734a5a2",
-      "1485827404703-89b55fcc595e",
-      "1569025690938-a00729c9e1f9"
-    ];
     const randomBase = curatedBases[Math.floor(Math.random() * curatedBases.length)];
     const dynamicImage = `https://images.unsplash.com/photo-${randomBase}?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3`;
 
