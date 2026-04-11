@@ -22,7 +22,10 @@ const curatedBases = [
 ];
 
 const app = express();
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+if (!resend) {
+  console.warn("⚠️ Resend API key missing. Email service disabled.");
+}
 app.use(cors({
   origin: [
     'http://localhost:5173',
@@ -253,6 +256,10 @@ articleRouter.post("/subscribe", subscribeLimiter, async (req, res) => {
 
 // Helper: Notify Subscribers
 const notifySubscribers = async (post) => {
+  if (!resend) {
+    console.log("Email service disabled, skipping subscriber notifications.");
+    return;
+  }
   try {
     const { data: subs, error } = await supabase.from('subscribers').select('email');
     if (error || !subs || subs.length === 0) return;
