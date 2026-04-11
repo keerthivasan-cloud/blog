@@ -41,7 +41,7 @@ const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const FRONTEND_URL = process.env.FRONTEND_URL || "https://newsforge.in";
 
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY;
+const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   console.warn("WARNING: Supabase keys are missing from environment variables.");
@@ -53,6 +53,18 @@ console.log("Supabase Client Initialized");
 // --- API ROUTES ---
 
 const articleRouter = express.Router();
+
+// 🟢 Health Check (For Render Deployment)
+app.get("/health", (req, res) => {
+  res.json({ 
+    status: "online", 
+    timestamp: new Date().toISOString(),
+    env_check: {
+      supabase: !!process.env.SUPABASE_URL,
+      gemini: !!process.env.GEMINI_API_KEY
+    }
+  });
+});
 
 // I. SPECIFIC ACTIONS
 articleRouter.get("/trending", async (req, res) => {
