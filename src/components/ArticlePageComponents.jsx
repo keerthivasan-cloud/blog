@@ -1,7 +1,7 @@
 import { Quote, List, Type, Image as LucideImage, Sparkles, ChevronRight, BarChart2 } from 'lucide-react';
 import { motion, useScroll, useSpring } from 'framer-motion';
 import Poll from './Poll';
-
+import AdPlacement from './AdPlacement';
 // 1. Reading Progress Bar
 export const ReadingProgressBar = () => {
   const { scrollYProgress } = useScroll();
@@ -68,10 +68,13 @@ export const TableOfContents = ({ content }) => {
 export const BlockRenderer = ({ blocks }) => {
   if (!blocks || !Array.isArray(blocks)) return null;
 
+  const midIndex = Math.floor(blocks.length / 2);
+
   return (
     <div className="article-content-flow space-y-10">
       {blocks.map((block, idx) => {
-        switch (block.type) {
+        const renderBlock = () => {
+          switch (block.type) {
           case 'paragraph':
             return (
               <p key={idx} className="text-xl text-slate-700 dark:text-slate-300 leading-[1.8] font-lora font-normal">
@@ -156,6 +159,14 @@ export const BlockRenderer = ({ blocks }) => {
           default:
             return null;
         }
+        };
+        
+        return (
+          <div key={idx}>
+            {renderBlock()}
+            {idx === midIndex && <AdPlacement slotId="middle-article-banner" />}
+          </div>
+        );
       })}
     </div>
   );

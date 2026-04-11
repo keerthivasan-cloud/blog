@@ -26,11 +26,11 @@ const Contact = () => {
           >
             <div className="flex items-center gap-3 mb-10 px-6 py-2.5 rounded-full border w-fit" style={{ background: 'var(--accent-soft)', borderColor: 'var(--accent-soft)' }}>
                <Zap className="w-4 h-4 fill-current" style={{ color: 'var(--accent)' }} />
-               <span className="text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: 'var(--accent)' }}>Terminal Support</span>
+               <span className="text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: 'var(--accent)' }}>Our Desk</span>
             </div>
             
-            <h1 className="text-6xl md:text-8xl font-black mb-10 -tracking-tight leading-[0.95] uppercase title">Connect <br /><span className="gradient-text">Nexus</span></h1>
-            <p className="text-xl font-bold uppercase tracking-widest mb-20 leading-relaxed subtitle">Synchronize with our technical desk for story briefs, analyst inquiries, or infrastructure support.</p>
+            <h1 className="text-6xl md:text-8xl font-black mb-10 -tracking-tight leading-[0.95] uppercase title">Contact <br /><span className="gradient-text">Us</span></h1>
+            <p className="text-xl font-bold uppercase tracking-widest mb-20 leading-relaxed subtitle">Get in touch with our team for news tips, general inquiries, or partnerships.</p>
 
             <div className="space-y-10">
                <div className="flex items-center gap-8 group">
@@ -38,8 +38,8 @@ const Contact = () => {
                      <Mail className="w-6 h-6 text-slate-300 group-hover:text-primary transition-colors" />
                   </div>
                   <div>
-                     <div className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-1">Electronic Mail</div>
-                     <div className="text-xl font-black text-slate-900 dark:text-white font-['Outfit']">terminal@newsforge.nexus</div>
+                     <div className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-1">Email</div>
+                     <div className="text-xl font-black text-slate-900 dark:text-white font-['Outfit']">contact@newsforge.com</div>
                   </div>
                </div>
                <div className="flex items-center gap-8 group">
@@ -47,8 +47,8 @@ const Contact = () => {
                      <MapPin className="w-6 h-6 text-slate-300 group-hover:text-primary transition-colors" />
                   </div>
                   <div>
-                     <div className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-1">Geospatial Origin</div>
-                     <div className="text-xl font-black text-slate-900 dark:text-white font-['Outfit']">Tech Sector 12, Node 42</div>
+                     <div className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-1">Location</div>
+                     <div className="text-xl font-black text-slate-900 dark:text-white font-['Outfit']">London, UK</div>
                   </div>
                </div>
             </div>
@@ -64,20 +64,20 @@ const Contact = () => {
                <form onSubmit={handleSubmit} className="space-y-10">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                      <div className="space-y-3">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Identity Signature</label>
-                        <input type="text" placeholder="FULL NAME" className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-3xl p-6 text-xs font-black uppercase tracking-widest outline-none focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600" required />
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Your Name</label>
+                        <input type="text" placeholder="NAME" className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-3xl p-6 text-xs font-black uppercase tracking-widest outline-none focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600" required />
                      </div>
                      <div className="space-y-3">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Electronic Address</label>
-                        <input type="email" placeholder="ADDRESS@NEXUS.COM" className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-3xl p-6 text-xs font-black uppercase tracking-widest outline-none focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600" required />
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Email address</label>
+                        <input type="email" placeholder="EMAIL" className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-3xl p-6 text-xs font-black uppercase tracking-widest outline-none focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600" required />
                      </div>
                   </div>
                   <div className="space-y-3">
-                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Transmission Data</label>
-                     <textarea rows="6" placeholder="SYNC MESSAGE..." className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-[3rem] p-8 text-xs font-black uppercase tracking-widest outline-none focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600" required />
+                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">How can we help?</label>
+                     <textarea rows="6" placeholder="WRITE YOUR MESSAGE..." className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-[3rem] p-8 text-xs font-black uppercase tracking-widest outline-none focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600" required />
                   </div>
                   <button type="submit" disabled={submitted} className="primary-btn w-full py-7 text-[12px] uppercase tracking-[0.4em] font-black flex items-center justify-center gap-4 active:scale-95">
-                    {submitted ? 'Transmission Successful' : 'INITIATE SYNC'} <Send className="w-5 h-5 group-hover:translate-x-1" />
+                    {submitted ? 'Message Sent' : 'SEND MESSAGE'} <Send className="w-5 h-5 group-hover:translate-x-1" />
                   </button>
                </form>
             </div>

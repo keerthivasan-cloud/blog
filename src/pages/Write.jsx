@@ -6,7 +6,7 @@ import {
   Quote, Image as LucideImage, Send, Eye, FileText 
 } from 'lucide-react';
 import axios from 'axios';
-import { Navbar, Footer } from '../components/Layout';
+import AdminLayout from '../components/AdminLayout';
 import { Link, useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config';
 import { useContent } from '../context/ContentContext';
@@ -15,7 +15,9 @@ const Write = () => {
   const [activeMode, setActiveMode] = useState("Catalyst"); // Catalyst (AI) or Architecture (Manual)
   const [genTopic, setGenTopic] = useState("");
   const [genCategory, setGenCategory] = useState("Intelligence");
+  const [genProvider, setGenProvider] = useState("auto");
   const [generating, setGenerating] = useState(false);
+  const [generationStatus, setGenerationStatus] = useState("");
   const [success, setSuccess] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const navigate = useNavigate();
@@ -32,23 +34,65 @@ const Write = () => {
   });
   const [isSaving, setIsSaving] = useState(false);
 
-  // --- SYNTHESIS LOGIC ---
+  // --- SYNTHESIS LOGIC (SSE STREAM) ---
   const handleGenerate = async () => {
-    if (!genTopic) return;
+    if (!genTopic || generating) return;
     setGenerating(true);
     setSuccess(null);
+    setGenerationStatus("Initiating Orchestrator...");
+    
     try {
-      const res = await axios.post(`${API_BASE_URL}/blogs/generate`, { 
-        topic: genTopic,
-        category: genCategory
-      }, {
-        headers: { Authorization: `Bearer admin123` }
+      const response = await fetch(`${API_BASE_URL}/blogs/generate`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer admin123` 
+        },
+        body: JSON.stringify({ topic: genTopic, category: genCategory, provider: genProvider })
       });
-      setSuccess(res.data);
-      setGenTopic("");
-      refreshArticles(); // live refresh global article list
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              
+              if (data.status) {
+                setGenerationStatus(data.status);
+              }
+              
+              if (data.done) {
+                setSuccess(data);
+                setGenTopic("");
+                refreshArticles();
+                break;
+              }
+
+              if (data.error) {
+                throw new Error(data.error);
+              }
+            } catch (e) {
+               // Ignore partial JSON parse errors until chunk forms full line
+            }
+          }
+        }
+      }
     } catch (err) {
-      alert(err.response?.data?.message || "Synthesis Failed");
+      alert(err.message || "Synthesis Failed");
+      setGenerationStatus("");
     } finally {
       setGenerating(false);
     }
@@ -119,12 +163,10 @@ const Write = () => {
   };
 
   return (
-    <div className="min-h-screen transition-colors duration-700" style={{ background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
-      <Navbar />
-      
-      <main className="max-w-7xl mx-auto px-6 py-24 md:py-40">
+    <AdminLayout>
+      <div className="max-w-7xl mx-auto px-6 py-12 md:py-20">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-left mb-20">
-          <Link to="/" className="inline-flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.4em] mb-12 no-underline hover:text-[var(--accent)] transition-colors text-muted-foreground">
+          <Link to="/admin/dashboard" className="inline-flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.4em] mb-12 no-underline hover:text-[var(--accent)] transition-colors" style={{ color: 'var(--text-muted)' }}>
             <ArrowLeft className="w-5 h-5" /> System Index
           </Link>
           
@@ -171,22 +213,48 @@ const Write = () => {
                                   value={genTopic}
                                   onChange={(e) => setGenTopic(e.target.value)}
                                   placeholder="Input technical parameter for AI synthesis..."
-                                  className="w-full bg-white/5 border border-white/10 rounded-[2.5rem] px-10 py-8 text-lg font-bold placeholder:opacity-20 focus:border-orange-500 transition-all outline-none resize-none h-40"
+                                  className="w-full rounded-[2.5rem] px-10 py-8 text-lg font-bold placeholder:opacity-20 focus:border-orange-500 transition-all outline-none resize-none h-60"
+                                  style={{ background: 'var(--bg-soft)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
                                 />
                              </div>
-                             <div className="md:col-span-4 space-y-4">
-                                <label className="text-[10px] font-black uppercase tracking-[0.5em] ml-2 opacity-40">Target Category</label>
-                                <select 
-                                  value={genCategory} 
-                                  onChange={(e) => setGenCategory(e.target.value)} 
-                                  className="w-full bg-white/5 border border-white/10 rounded-[2rem] px-8 py-8 text-[10px] font-black uppercase outline-none appearance-none cursor-pointer focus:border-orange-500"
-                                >
-                                   {["Intelligence", "Tech", "Finance", "Business", "Markets", "Commodities"].map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
+                             <div className="md:col-span-4 space-y-8">
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.5em] ml-2" style={{ color: 'var(--text-muted)' }}>Target Category</label>
+                                    <select 
+                                      value={genCategory} 
+                                      onChange={(e) => setGenCategory(e.target.value)} 
+                                      className="w-full rounded-[2rem] px-8 py-6 text-[10px] font-black uppercase outline-none appearance-none cursor-pointer focus:border-orange-500"
+                                      style={{ background: 'var(--bg-soft)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                                    >
+                                       {["Intelligence", "Tech", "Finance", "Business", "Markets", "Commodities"].map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+                                </div>
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.5em] ml-2" style={{ color: 'var(--text-muted)' }}>AI Engine</label>
+                                    <select 
+                                      value={genProvider} 
+                                      onChange={(e) => setGenProvider(e.target.value)} 
+                                      className="w-full rounded-[2rem] px-8 py-6 text-[10px] font-black uppercase outline-none appearance-none cursor-pointer focus:border-orange-500"
+                                      style={{ background: 'var(--bg-soft)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                                    >
+                                       <option value="auto">Auto (Resilient Fallback)</option>
+                                       <option value="gemini">Gemini (Google)</option>
+                                       <option value="groq">Groq (Open-Source)</option>
+                                    </select>
+                                </div>
                              </div>
                           </div>
-                          <button onClick={handleGenerate} disabled={generating || !genTopic} className={`w-full py-8 rounded-3xl font-black uppercase text-xs tracking-[0.4em] transition-all flex items-center justify-center gap-4 cursor-pointer border-0 shadow-2xl ${generating ? 'opacity-50 bg-orange-600/50' : 'bg-orange-600 hover:bg-orange-500'}`} style={{ color: 'white' }}>
-                             {generating ? <>Synthesis In-Progress <Loader2 className="w-5 h-5 animate-spin" /></> : <>Initiate Protocol <Zap className="w-5 h-5 fill-white" /></>}
+                          <button onClick={handleGenerate} disabled={generating || !genTopic} className={`w-full py-8 rounded-3xl font-black uppercase text-xs tracking-[0.4em] transition-all flex items-center justify-center gap-4 cursor-pointer border-0 shadow-2xl ${generating ? 'opacity-70 bg-orange-600/50 cursor-not-allowed' : 'bg-orange-600 hover:bg-orange-500'}`} style={{ color: 'white' }}>
+                             {generating ? (
+                               <div className="flex flex-col items-center gap-2">
+                                  <div className="flex items-center gap-3">
+                                     <Loader2 className="w-5 h-5 animate-spin" />
+                                     <span>{generationStatus || "Synthesis In-Progress"}</span>
+                                  </div>
+                               </div>
+                             ) : (
+                               <>Initiate Protocol <Zap className="w-5 h-5 fill-white" /></>
+                             )}
                           </button>
                        </div>
                     </motion.div>
@@ -319,10 +387,8 @@ const Write = () => {
               </div>
            </div>
         </section>
-      </main>
-
-      <Footer />
-    </div>
+      </div>
+    </AdminLayout>
   );
 };
 

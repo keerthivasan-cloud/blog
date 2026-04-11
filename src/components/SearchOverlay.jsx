@@ -1,148 +1,151 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, Loader2, Calendar, Clock, ArrowRight } from 'lucide-react';
+import { Search, X, Command, ArrowRight, Zap, Sparkles, Clock } from 'lucide-react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config';
 
-export default function SearchOverlay({ isOpen, onClose }) {
+const SearchOverlay = ({ isOpen, onClose }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 100);
-      document.body.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = 'auto';
       setQuery('');
       setResults([]);
     }
   }, [isOpen]);
 
   useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      if (query.length > 2) {
-        performSearch();
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        isOpen ? onClose() : document.dispatchEvent(new CustomEvent('toggleSearch'));
+      }
+      if (e.key === 'Escape' && isOpen) onClose();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (query.trim().length > 1) {
+        setLoading(true);
+        try {
+          const res = await axios.get(`${API_BASE_URL}/search?q=${query}`);
+          setResults(res.data);
+        } catch (err) {
+          console.error("Search failure", err);
+        } finally {
+          setLoading(false);
+        }
       } else {
         setResults([]);
       }
     }, 300);
 
-    return () => clearTimeout(delayDebounceFn);
+    return () => clearTimeout(timer);
   }, [query]);
 
-  const performSearch = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get(`${API_BASE_URL}/search?q=${query}`);
-      setResults(res.data);
-    } catch (err) {
-      console.error("Search failure:", err);
-    } finally {
-      setLoading(false);
-    }
+  const handleSelect = (category, slug) => {
+    navigate(`/${category.toLowerCase().replace(/\s+/g, '-')}/${slug}`);
+    onClose();
   };
 
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] bg-white/95 dark:bg-slate-950/98 backdrop-blur-xl flex flex-col p-6 md:p-20 overflow-y-auto"
-        >
-          {/* Close Button */}
-          <button 
+        <div className="fixed inset-0 z-[300] flex items-start justify-center pt-24 md:pt-40 px-6">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             onClick={onClose}
-            type="button"
-            className="absolute top-10 right-10 p-4 rounded-full bg-slate-100 dark:bg-slate-900 text-slate-400 hover:text-primary transition-all border-none cursor-pointer"
+            className="absolute inset-0 bg-slate-950/80 backdrop-blur-xl"
+          />
+          
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -20 }}
+            className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden"
           >
-            <X className="w-6 h-6" />
-          </button>
-
-          <div className="max-w-4xl mx-auto w-full pt-20">
-            {/* Search Input */}
-            <div className="relative mb-20 group">
-              <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 text-slate-200 dark:text-slate-800 transition-colors group-focus-within:text-primary" />
-              <input
+            {/* SEARCH INPUT AREA */}
+            <div className="p-8 border-b border-slate-100 dark:border-slate-800 relative">
+              <Search className="absolute left-10 top-1/2 -translate-y-1/2 w-6 h-6 text-primary" />
+              <input 
                 ref={inputRef}
-                type="text"
-                placeholder="DISCOVER INSIGHTS..."
-                className="w-full bg-transparent border-none text-5xl md:text-7xl font-black font-['Outfit'] text-slate-900 dark:text-white outline-none pl-16 md:pl-24 placeholder:text-slate-100 dark:placeholder:text-slate-900 uppercase tracking-tighter"
+                type="text" 
+                placeholder="Search Intelligence Archive..." 
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Escape' && onClose()}
+                className="w-full bg-transparent border-none outline-none pl-12 pr-12 text-xl font-black font-['Outfit'] dark:text-white placeholder:text-slate-300 dark:placeholder:text-slate-700 uppercase tracking-tight"
               />
-              <div className="absolute bottom-0 left-0 w-full h-1 bg-slate-100 dark:bg-slate-900 origin-left">
-                <motion.div 
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: query.length > 0 ? 1 : 0 }}
-                  className="w-full h-full bg-primary"
-                />
+              <div className="absolute right-10 top-1/2 -translate-y-1/2 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 opacity-60">
+                 <Command className="w-3 h-3" />
+                 <span className="text-[9px] font-black">K</span>
               </div>
             </div>
 
-            {/* Results Area */}
-            <div className="space-y-12">
+            {/* RESULTS AREA */}
+            <div className="max-h-[60vh] overflow-y-auto p-4 custom-scrollbar">
               {loading ? (
-                <div className="flex items-center justify-center py-20 gap-4">
-                  <Loader2 className="w-8 h-8 animate-spin text-primary opacity-20" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-300">Synchronizing nodes...</span>
-                </div>
+                 <div className="py-20 text-center"><Sparkles className="w-8 h-8 animate-spin text-primary mx-auto" /></div>
               ) : results.length > 0 ? (
-                <div className="grid grid-cols-1 gap-8">
-                   <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary mb-4 border-b border-slate-100 dark:border-slate-900 pb-4">
-                      Matched Articles ({results.length})
-                   </h4>
+                <div className="space-y-2">
+                   <p className="px-6 py-2 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Knowledge Nodes Detected</p>
                    {results.map((item) => (
-                     <Link 
-                       key={item._id} 
-                       to={`/${item.category.toLowerCase().replace(/\s+/g, '-')}/${item.slug}`}
-                       onClick={onClose}
-                       className="group flex flex-col md:flex-row md:items-center justify-between gap-6 p-8 rounded-3xl hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-all border border-transparent hover:border-slate-100 dark:hover:border-slate-800 no-underline text-inherit"
-                     >
-                       <div className="space-y-3">
-                          <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.3em] text-slate-400">
-                             <span className="text-primary">{item.category}</span>
-                             <span>/</span>
-                             <span>{new Date(item.createdAt).toLocaleDateString()}</span>
-                          </div>
-                          <h3 className="text-2xl md:text-3xl font-black font-lora text-slate-900 dark:text-white group-hover:text-primary transition-colors uppercase tracking-tight">
-                             {item.title}
-                          </h3>
-                       </div>
-                       <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-300 group-hover:bg-primary group-hover:text-white transition-all transform group-hover:translate-x-2 flex items-center justify-center">
-                          <ArrowRight className="w-5 h-5" />
-                       </div>
-                     </Link>
+                      <button 
+                        key={item.id} 
+                        onClick={() => handleSelect(item.category, item.slug)}
+                        className="w-full text-left p-6 rounded-[1.5rem] hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all flex items-center justify-between group cursor-pointer border-none bg-transparent"
+                      >
+                         <div className="flex items-center gap-5">
+                            <div className="w-12 h-12 rounded-2xl bg-primary/5 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                               <Zap className="w-5 h-5 fill-current" />
+                            </div>
+                            <div>
+                               <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">{item.category}</p>
+                               <h4 className="text-sm font-black dark:text-white uppercase tracking-tight line-clamp-1">{item.title}</h4>
+                            </div>
+                         </div>
+                         <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-slate-400" />
+                      </button>
                    ))}
                 </div>
-              ) : query.length > 2 && !loading ? (
-                <div className="text-center py-20">
-                   <div className="text-4xl font-black text-slate-200 dark:text-slate-800 mb-4 tracking-tight uppercase">No Matches Found</div>
-                   <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Redefine your search parameters to find the intersection.</p>
+              ) : query.length > 1 ? (
+                <div className="py-20 text-center text-slate-400">
+                   <p className="text-[10px] font-black uppercase tracking-[0.4em]">No Knowledge Nodes Found</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-10 opacity-30 pointer-events-none">
-                   {/* Search Hints */}
-                   <div className="p-10 rounded-[3rem] border-2 border-dashed border-slate-100 dark:border-slate-900 text-center">
-                     <Clock className="w-10 h-10 mx-auto mb-6 text-slate-200" />
-                     <p className="text-[10px] font-black uppercase tracking-widest leading-loose">Search by technical keyword or article headline.</p>
-                   </div>
-                   <div className="p-10 rounded-[3rem] border-2 border-dashed border-slate-100 dark:border-slate-900 text-center">
-                     <Calendar className="w-10 h-10 mx-auto mb-6 text-slate-200" />
-                     <p className="text-[10px] font-black uppercase tracking-widest leading-loose">Filter through years of market intelligence in real-time.</p>
-                   </div>
+                <div className="p-8 space-y-8">
+                  <div className="space-y-4">
+                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Recent Searches</p>
+                     <div className="flex flex-wrap gap-3">
+                        {['Geopolitics', 'AI Ethics', 'Market Shift'].map((tag) => (
+                           <button key={tag} onClick={() => setQuery(tag)} className="px-5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white transition-all border-none cursor-pointer">{tag}</button>
+                        ))}
+                     </div>
+                  </div>
+                  <div className="p-6 rounded-3xl bg-primary/5 border border-primary/10 flex items-center gap-6">
+                     <Clock className="w-6 h-6 text-primary" />
+                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 leading-relaxed">System history is decentralized. Your local search cache is prioritized.</p>
+                  </div>
                 </div>
               )}
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       )}
     </AnimatePresence>
   );
-}
+};
+
+export default SearchOverlay;

@@ -1,22 +1,41 @@
 const express = require("express");
 const { createClient } = require("@supabase/supabase-js");
+const { Resend } = require("resend");
+const rateLimit = require("express-rate-limit");
 const cors = require("cors");
 require("dotenv").config();
 
 const multer = require("multer");
 
+// --- UTILS & CONSTANTS ---
+const curatedBases = [
+  "1451187580242-4f769806037e", // Modern office / Laptop
+  "1518770665346-f8c7981fb5a6", // Circuit board / High-tech
+  "1504384308090-c894fdcc538d", // Coding / Developer
+  "1519389950473-47ba0277781c", // Team / Business meeting
+  "1460925895917-afdab827c52f", // Dashboard / Growth
+  "1526628953301-3e589a6a8b74", // Abstract futuristic
+  "1550751827-4bd374c3f58b", // Cyber security
+  "1485827404703-89b55fcc595e", // AI / Robotics
+  "1531297484001-80022131f5a1", // Server room
+  "1551288049-bebda4e38f71"  // Data visualization
+];
+
 const app = express();
+const resend = new Resend(process.env.RESEND_API_KEY);
 app.use(cors({
   origin: [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
+    'http://localhost:5174',
+    'http://127.0.0.1:5174',
     'http://localhost:4173',
     'http://127.0.0.1:4173',
     'https://newsforge.in',
     /\.vercel\.app$/
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma'],
   credentials: true
 }));
 app.use(express.json());
@@ -66,6 +85,29 @@ app.get("/health", (req, res) => {
   });
 });
 
+// --- SETTINGS API ---
+const fs = require('fs');
+const settingsPath = './settings.json';
+
+const getSettings = () => {
+  if (fs.existsSync(settingsPath)) {
+    return JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+  }
+  return { siteName: 'NewsForge', themeColor: '#000000', adsenseScript: '', logoUrl: '' };
+};
+
+app.get(["/api/settings", "/api/settings/"], (req, res) => {
+  console.log(`[SETTINGS API] Matched exact path: ${req.url}`);
+  res.status(200).json(getSettings());
+});
+
+app.put("/api/settings", adminAuth, (req, res) => {
+  const current = getSettings();
+  const updated = { ...current, ...req.body };
+  fs.writeFileSync(settingsPath, JSON.stringify(updated, null, 2));
+  res.json(updated);
+});
+
 // I. SPECIFIC ACTIONS
 articleRouter.get("/trending", async (req, res) => {
   try {
@@ -93,28 +135,37 @@ articleRouter.post("/:id/react", (req, res) => {
 // II. BULK OPERATIONS
 articleRouter.get("/", async (req, res) => {
   try {
-    const { category, tag } = req.query;
+    const { category, tag, limit = 9, page = 1 } = req.query;
+    const pageSize = parseInt(limit);
+    const pageNum = parseInt(page);
+    const start = (pageNum - 1) * pageSize;
+    const end = start + pageSize - 1;
     
-    let query = supabase.from('articles').select('*').eq('status', 'published').order('createdAt', { ascending: false });
+    let query = supabase
+      .from('articles')
+      .select('*', { count: 'exact' })
+      .eq('status', 'published')
+      .order('createdAt', { ascending: false });
     
     if (category && category !== 'All') {
       query = query.ilike('category', category);
     }
     
-    const { data: posts, error } = await query;
+    if (tag) {
+      // Assuming tags is an array column. .contains(['tag']) works for arrays.
+      query = query.contains('tags', [tag.toLowerCase()]);
+    }
+
+    const { data: posts, count, error } = await query.range(start, end);
+    
     if (error) throw error;
     
-    let filteredPosts = posts || [];
-    
-    if (tag) {
-      const t = tag.toLowerCase();
-      filteredPosts = filteredPosts.filter(p => {
-        const tags = p.tags || [];
-        return tags.some(s => s.toLowerCase() === t);
-      });
-    }
-    
-    res.json(filteredPosts);
+    res.json({
+      articles: posts || [],
+      totalCount: count,
+      currentPage: pageNum,
+      totalPages: Math.ceil(count / pageSize)
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -122,7 +173,14 @@ articleRouter.get("/", async (req, res) => {
 
 articleRouter.get("/trending-tags", async (req, res) => {
   try {
-    const { data: posts, error } = await supabase.from('articles').select('tags').eq('status', 'published');
+    // Limit search to the last 50 articles to avoid heavy processing
+    const { data: posts, error } = await supabase
+      .from('articles')
+      .select('tags')
+      .eq('status', 'published')
+      .order('createdAt', { ascending: false })
+      .limit(50);
+      
     if (error) throw error;
     
     const tagFreq = new Map();
@@ -146,19 +204,124 @@ articleRouter.get("/trending-tags", async (req, res) => {
   }
 });
 
-// III. SLUG RETRIEVAL
-articleRouter.get("/:slug", async (req, res) => {
+// Rate Limiter for Subscriptions: Max 5 per minute per IP
+const subscribeLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 5,
+  message: { success: false, message: "Too many subscription attempts, please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// NEW: Subscription Route
+articleRouter.post("/subscribe", subscribeLimiter, async (req, res) => {
   try {
-    const { data: post, error } = await supabase
-      .from('articles')
-      .select('*')
-      .eq('slug', req.params.slug)
-      .single();
+    const { email: rawEmail } = req.body;
+    const email = rawEmail?.trim().toLowerCase();
+    
+    // 1. Validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
+      return res.status(400).json({ success: false, message: "Please provide a valid email address." });
+    }
+
+    // 2. Duplicate Check (Strict)
+    const { data: existing, error: fetchError } = await supabase
+      .from('subscribers')
+      .select('email')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (fetchError) throw fetchError;
+    if (existing) {
+      return res.json({ success: false, message: "Already subscribed" });
+    }
+
+    // 3. Insertion
+    const { error: insertError } = await supabase
+      .from('subscribers')
+      .insert([{ email, created_at: new Date().toISOString() }]);
+
+    if (insertError) throw insertError;
+
+    res.json({ success: true, message: "Subscription successful!" });
+  } catch (err) {
+    console.error("Subscription system failure:", err);
+    res.status(500).json({ success: false, message: "Internal terminal logic failure" });
+  }
+});
+
+// Helper: Notify Subscribers
+const notifySubscribers = async (post) => {
+  try {
+    const { data: subs, error } = await supabase.from('subscribers').select('email');
+    if (error || !subs || subs.length === 0) return;
+
+    const emails = subs.map(s => s.email);
+    
+    // Resend batch limit is 100 per call for free tier sometimes, or just use a loop for safety
+    // For simplicity, we'll send to all at once if count is small, or loop
+    for (const email of emails) {
+      await resend.emails.send({
+        from: 'NewsForge <onboarding@resend.dev>', // Use verified domain here if you have one
+        to: email,
+        subject: `New Insight: ${post.title}`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+            <h1 style="color: #f97316; text-transform: uppercase; font-size: 24px;">NewsForge Intelligence</h1>
+            <p style="font-size: 14px; text-transform: uppercase; letter-spacing: 2px; color: #64748b;">New Protocol Published in ${post.category}</p>
+            <h2 style="font-size: 20px; margin-top: 20px;">${post.title}</h2>
+            <p style="color: #334155; line-height: 1.6;">${post.excerpt || 'A new strategic analysis has been published on NewsForge. Click below to read the full intelligence report.'}</p>
+            <a href="https://newsforge-v1.vercel.app/${post.category.toLowerCase().replace(/\s+/g, '-')}/${post.slug}" style="display: inline-block; background: #f97316; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-top: 20px;">READ FULL REPORT</a>
+            <hr style="margin-top: 40px; border: none; border-top: 1px solid #eee;" />
+            <p style="font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;">
+              You received this because you are subscribed to NewsForge Intelligence Hub. 
+              <br /><a href="#" style="color: #94a3b8;">Unsubscribe</a>
+            </p>
+          </div>
+        `
+      });
+    }
+    console.log(`Notifications sent to ${emails.length} subscribers.`);
+  } catch (err) {
+    console.error("Failed to notify subscribers:", err);
+  }
+};
+
+// III. ASSET RETRIEVAL (BY ID OR SLUG)
+articleRouter.get("/:identifier", async (req, res) => {
+  try {
+    const { identifier } = req.params;
+    
+    // Check if identifier is a UUID (approximate check)
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
+    
+    let query = supabase.from('articles').select('*');
+    
+    if (isUuid) {
+      query = query.eq('id', identifier);
+    } else {
+      query = query.eq('slug', identifier);
+    }
+
+    const { data: post, error } = await query.maybeSingle();
       
     if (error || !post) return res.status(404).json({ message: "Intelligence node not found" });
     res.json(post);
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+});
+
+articleRouter.delete("/:id", adminAuth, async (req, res) => {
+  console.log(`[DELETE DEBUG] Attempting to purge article ID: ${req.params.id}`);
+  try {
+    const { id } = req.params;
+    const { error } = await supabase.from('articles').delete().eq('id', id);
+    if (error) throw error;
+    res.json({ success: true, message: "Node purged from high-priority archive" });
+  } catch (err) {
+    res.status(500).json({ message: "Purge failure: " + err.message });
   }
 });
 
@@ -210,6 +373,10 @@ articleRouter.post("/", adminAuth, async (req, res) => {
 
     if (error) throw error;
 
+    // Trigger Notifications
+    const { data: newPost } = await supabase.from('articles').select('*').eq('slug', slug).single();
+    if (newPost) notifySubscribers(newPost);
+
     res.json({ 
       success: true, 
       message: "Technical node published to archive", 
@@ -225,6 +392,218 @@ articleRouter.post("/", adminAuth, async (req, res) => {
 // Mount specialized router
 app.use("/api/articles", articleRouter);
 app.use("/api/blogs", articleRouter); // Alias
+
+// --- ADVANCED ADMIN HUB ---
+
+// 1. Subscriber Management (Enhanced with Search/Filter)
+app.get("/api/subscribers", adminAuth, async (req, res) => {
+  try {
+    const { q, status, page = 1, limit = 50 } = req.query;
+    const offset = (page - 1) * limit;
+
+    let query = supabase
+      .from('subscribers')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false });
+
+    if (q) query = query.ilike('email', `%${q}%`);
+    if (status && status !== 'all') query = query.eq('status', status);
+
+    const { data: subs, count, error } = await query.range(offset, offset + limit - 1);
+    
+    if (error) throw error;
+    res.json({ data: subs, total: count });
+  } catch (err) {
+    res.status(500).json({ message: "Subscription retrieval failure: " + err.message });
+  }
+});
+
+// 2. Media Library (Metadata-Driven Upgrade)
+app.get("/api/media", adminAuth, async (req, res) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+    const offset = (page - 1) * limit;
+
+    const { data: media, count, error } = await supabase
+      .from('media_assets')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+    
+    if (error) throw error;
+    res.json({ data: media, total: count });
+  } catch (err) {
+    res.status(500).json({ message: "Media retrieval failure: " + err.message });
+  }
+});
+
+app.delete("/api/media/:id", adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // 1. Resolve asset metadata
+    const { data: asset, error: fetchError } = await supabase.from('media_assets').select('file_name').eq('id', id).single();
+    if (fetchError || !asset) throw new Error("Asset not found in archive");
+
+    // 2. Clear from Storage
+    const { error: storageError } = await supabase.storage.from('images').remove([asset.file_name]);
+    if (storageError) throw storageError;
+
+    // 3. Clear from DB
+    const { error: dbError } = await supabase.from('media_assets').delete().eq('id', id);
+    if (dbError) throw dbError;
+
+    res.json({ success: true, message: "Asset purged from storage and indices" });
+  } catch (err) {
+    res.status(500).json({ message: "Media deletion failure: " + err.message });
+  }
+});
+
+// Sync: One-time population tool
+app.post("/api/media/sync", adminAuth, async (req, res) => {
+  try {
+    const { data: files, error } = await supabase.storage.from('images').list();
+    if (error) throw error;
+
+    const assets = (files || []).map(file => {
+      const { data: publicUrlData } = supabase.storage.from('images').getPublicUrl(file.name);
+      return {
+        file_name: file.name,
+        file_url: publicUrlData.publicUrl,
+        file_size: file.metadata?.size || 0,
+        mime_type: file.metadata?.mimetype || 'image/unknown'
+      };
+    });
+
+    // Upsert to handle duplicates (by file_name)
+    const { error: syncError } = await supabase.from('media_assets').upsert(assets, { onConflict: 'file_name' });
+    if (syncError) throw syncError;
+
+    res.json({ success: true, count: assets.length });
+  } catch (err) {
+    res.status(500).json({ message: "Sync failure: " + err.message });
+  }
+});
+
+// 4. Admin Analytics & Stats
+app.get("/api/admin/stats", adminAuth, async (req, res) => {
+  try {
+    // parallel fetch for performance
+    const [articles, subs, media] = await Promise.all([
+      supabase.from('articles').select('views', { count: 'exact' }),
+      supabase.from('subscribers').select('*', { count: 'exact', head: true }),
+      supabase.from('media_assets').select('*', { count: 'exact', head: true })
+    ]);
+
+    const totalViews = (articles.data || []).reduce((acc, curr) => acc + (curr.views || 0), 0);
+    
+    res.json({
+      articles: articles.count || 0,
+      subscribers: subs.count || 0,
+      media: media.count || 0,
+      views: totalViews,
+      uptime: process.uptime()
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Analytics retrieval failure: " + err.message });
+  }
+});
+
+// 3. Article Versioning & Updates
+articleRouter.get("/:id/versions", adminAuth, async (req, res) => {
+  try {
+    const { data: versions, error } = await supabase
+      .from('article_versions')
+      .select('*')
+      .eq('article_id', req.params.id)
+      .order('created_at', { ascending: false });
+      
+    if (error) throw error;
+    res.json(versions || []);
+  } catch (err) {
+    res.status(500).json({ message: "Version retrieval failure: " + err.message });
+  }
+});
+
+articleRouter.put("/:identifier", adminAuth, async (req, res) => {
+  try {
+    const { identifier } = req.params;
+    const { title, category, author, readTime, image, excerpt, content, status } = req.body;
+
+    // 1. Resolve exact article ID for backend consistency
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
+    let fetchQuery = supabase.from('articles').select('id, title, content, image');
+    
+    if (isUuid) {
+      fetchQuery = fetchQuery.eq('id', identifier);
+    } else {
+      fetchQuery = fetchQuery.eq('slug', identifier);
+    }
+
+    const { data: current, error: fetchError } = await fetchQuery.maybeSingle();
+
+    if (!fetchError && current) {
+      // Create backup in article_versions using the resolved UUID
+      await supabase.from('article_versions').insert([{
+        article_id: current.id,
+        title: current.title,
+        content: current.content,
+        image: current.image,
+        created_at: new Date().toISOString()
+      }]);
+    }
+
+    // 2. Perform Update (using resolved ID if found, else falling back to identifier)
+    const targetId = current?.id || identifier;
+    const { error: updateError } = await supabase
+      .from('articles')
+      .update({
+        title,
+        category: category || 'Tech',
+        content: Array.isArray(content) ? content : null,
+        excerpt: excerpt || '',
+        image: image || '',
+        author: author || 'NewsForge',
+        status: status || 'published',
+        readTime: readTime || 5,
+        updatedAt: new Date().toISOString()
+      })
+      .eq('id', targetId);
+
+    if (updateError) throw updateError;
+    res.json({ success: true, message: "Intelligence node synchronized and backed up" });
+  } catch (err) {
+    res.status(500).json({ message: "Article update failure: " + err.message });
+  }
+});
+
+articleRouter.post("/:id/restore", adminAuth, async (req, res) => {
+  try {
+    const { version_id } = req.body;
+    const { data: version, error: vError } = await supabase
+      .from('article_versions')
+      .select('*')
+      .eq('id', version_id)
+      .single();
+
+    if (vError || !version) throw new Error("Version node not found");
+
+    const { error: rError } = await supabase
+      .from('articles')
+      .update({
+        title: version.title,
+        content: version.content,
+        image: version.image,
+        updatedAt: new Date().toISOString()
+      })
+      .eq('id', req.params.id);
+
+    if (rError) throw rError;
+    res.json({ success: true, message: "Intelligence node restored to previous state" });
+  } catch (err) {
+    res.status(500).json({ message: "Version restoration failure: " + err.message });
+  }
+});
 
 // Search Articles
 app.get("/api/search", async (req, res) => {
@@ -276,12 +655,12 @@ app.get("/sitemap.xml", async (req, res) => {
   }
 });
 
-// --- AI INTELLIGENCE SYNTHESIS ---
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// --- AI INTELLIGENCE ---
+const { parseMarkdownToBlocks } = require('./utils/markdownParser');
+const aiOrchestrator = require('./services/aiOrchestrator');
 
 app.post("/api/blogs/generate", adminAuth, async (req, res) => {
-  const { topic, category: requestedCategory } = req.body;
+  const { topic, category: requestedCategory, provider, depth = 'standard' } = req.body;
 
   if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.includes("YOUR")) {
     return res.status(403).json({ message: "Intelligence Node Inactive: GEMINI_API_KEY required in .env" });
@@ -291,37 +670,39 @@ app.post("/api/blogs/generate", adminAuth, async (req, res) => {
     return res.status(400).json({ message: "No synthesis topic provided" });
   }
 
+  // Setup SSE Headers
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  // Send an initial ping so client knows connection is open
+  res.write(": connected\n\n");
+
   const topicClean = topic.trim();
+  const wordTarget = depth === 'deep' ? '1500-2000' : '800-1200';
+  const sectionTarget = depth === 'deep' ? '8-10' : '4-6';
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-    const prompt = `You are a skilled blog writer who writes in simple, natural, human-like English.
+    const prompt = `You are a world-class industry analyst writing a HIGHLY DETAILED, FULL-LENGTH deep-dive report.
 
 TOPIC: "${topicClean}"
 
-CRITICAL RULE: Write ONLY about this exact topic. Do NOT generalize, drift, or shift to broader subjects. Stay strictly focused on: "${topicClean}"
+CRITICAL INSTRUCTION: You MUST output a complete, fully fleshed-out article. Do NOT output a short summary. 
+
+REQUIRED STRUCTURE (You MUST include ALL of these formatting elements):
+1. Introduction: A powerful hook and executive summary paragraphs.
+2. Headings: You MUST use ${sectionTarget} distinct "##" (H2) headings.
+3. Subsections: Use "###" (H3) for granular details under your main points.
+4. Blockquotes: You MUST include at least 2 quotes starting with "> ". Use these to highlight major industry takeaways or hypothetical expert opinions.
+5. Bullet Points: You MUST include at least 2 bulleted lists (starting with "- ") to break down complex data, steps, or features.
+6. Highlights: You MUST wrap the 3 most important insights in double asterisks like this: **This is a critical insight**. (Make sure the bold text is an entire sentence, 20-100 characters long).
+7. Conclusion: A robust final takeaway.
 
 YOUR WRITING STYLE:
-- Write like a real person explaining this to someone who is new to the subject
-- Use short sentences. Keep paragraphs to 2–4 lines max
-- Avoid jargon. If you must use a technical term, explain it briefly right after
-- Add a slight personal or opinionated tone — avoid academic or robotic phrasing
-- Use natural phrases like "Let's be honest...", "Here's the reality...", "Most people don't realize..."
-- Every sentence must add value. Cut filler. Cut fluff.
-- Do NOT sound like AI, Wikipedia, or a textbook
-- Do NOT use: "In conclusion", "In today's fast-paced world", "This article explores", "Delve into", "It is worth noting", "Overall", "To summarize"
-
-BLOG STRUCTURE (follow this order):
-1. Title — specific, curiosity-driven, directly tied to the topic
-2. Hook intro — 2–3 engaging lines that immediately pull the reader in
-3. 3–6 main sections using ## H2 headings (choose count based on topic depth)
-4. Use ### H3 subsections if a section covers multiple sub-points
-5. Use bullet points (-) where listing ideas or steps adds clarity
-6. Include real-world examples, comparisons, or relatable scenarios
-7. Conclusion — a clear, memorable takeaway (no generic wrap-ups)
-
-LENGTH: 700–1200 words
+- Target length: Exactly ${wordTarget} words. Write long, expansive paragraphs.
+- Tone: Professional, authoritative, yet engaging (like a high-end Substack or Harvard Business Review article).
+- Expand on every single point. Do not just list things; explain the "why" and "how".
+- NO generic intros or outflows like "In conclusion" or "Let's delve in".
+- Write strictly in Markdown.
 
 IMAGE PROMPT RULES:
 Create a specific image generation prompt for a blog thumbnail that visually matches the exact topic.
@@ -342,37 +723,36 @@ Return ONLY a valid JSON object. No markdown. No backticks. No explanation. Noth
   "image_prompt": "Your detailed, topic-specific image generation prompt"
 }`;
 
-    const result = await model.generateContent(prompt);
-    const rawText = result.response.text().trim();
+    const updateStatus = (msg) => {
+      res.write(`data: ${JSON.stringify({ status: msg })}\n\n`);
+    };
 
-    // Strip markdown code fences if the model wraps the response
-    const jsonText = rawText
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/\s*```$/i, "")
-      .trim();
-
-    let parsed;
-    try {
-      parsed = JSON.parse(jsonText);
-    } catch (_) {
-      // Fallback: pull the first JSON object out of a noisy response
-      const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error("AI returned a malformed response. Please retry with a clearer topic.");
-      parsed = JSON.parse(jsonMatch[0]);
-    }
-
-    const { title, content, image_prompt } = parsed;
-
-    if (!title || !content) {
-      throw new Error("Incomplete synthesis response. Please retry with a more specific topic.");
-    }
+    const orchestratorResult = await aiOrchestrator.generateContent(prompt, updateStatus, provider);
+    
+    // If complete failure, still send the fail-safe back to the frontend gracefully
+    const { title, content, image_prompt } = orchestratorResult.data;
 
     const date = new Date().toISOString();
     const dateShort = date.split("T")[0];
     const slug = title.toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");
 
     // Expanded curated Unsplash base images (varied visual styles)
+    const curatedBases = [
+      "1451187580459-43490279c0fa",
+      "1518770660439-4636190af475",
+      "1550751827-4bd374c3f58b",
+      "1639734311735-3c910a7620a7",
+      "1611974710112-6e9fa1e7960a",
+      "1526303328154-4bac89c0250b",
+      "1677442135703-1787eea5ce01",
+      "1620712943543-bcc4688e7485",
+      "1581090464777-f3220bbe1b8b",
+      "1633356122544-f134324a6cee",
+      "1504711434969-e33886168f5c",
+      "1573496359142-b8d87734a5a2",
+      "1485827404703-89b55fcc595e",
+      "1569025690938-a00729c9e1f9"
+    ];
     const randomBase = curatedBases[Math.floor(Math.random() * curatedBases.length)];
     const dynamicImage = `https://images.unsplash.com/photo-${randomBase}?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3`;
 
@@ -404,9 +784,10 @@ ${content}`;
       slug,
       category: requestedCategory || "Intelligence",
       markdownContent: finalMarkdown,
+      content: parseMarkdownToBlocks(content),
       excerpt,
       image: dynamicImage,
-      author: "NewsForge",
+      author: orchestratorResult.success ? "NewsForge AI" : "System Fail-Safe",
       status: "published",
       readTime: 5,
       createdAt: date
@@ -414,24 +795,30 @@ ${content}`;
 
     if (error) throw error;
 
-    res.json({
-      success: true,
-      message: "Intelligence node synthesized and published",
+    // Trigger Notifications
+    const { data: newPost } = await supabase.from('articles').select('*').eq('slug', slug).single();
+    if (newPost) notifySubscribers(newPost);
+
+    updateStatus("Synthesis complete.");
+    res.write(`data: ${JSON.stringify({
+      done: true,
+      success: orchestratorResult.success,
+      message: orchestratorResult.success ? "Intelligence node synthesized and published" : "Fail-Safe node published",
       slug,
       title,
-      author: "NewsForge",
-      image_prompt
-    });
+      author: orchestratorResult.success ? "NewsForge AI" : "System Fail-Safe",
+      image_prompt,
+      provider: orchestratorResult.provider || 'none'
+    })}\n\n`);
+    res.end();
   } catch (error) {
-    console.error("Synthesis Failure:", error);
-    const userMessage = error.message?.includes("JSON") || error.message?.includes("malformed") || error.message?.includes("Incomplete")
-      ? error.message
-      : "Intelligence Synthesis Failed: " + error.message;
-    res.status(500).json({ message: userMessage });
+    console.error("Synthesis Endpoint Failure:", error);
+    res.write(`data: ${JSON.stringify({ error: "Intelligence Synthesis Failed: " + error.message })}\n\n`);
+    res.end();
   }
 });
 
-// File Upload to Supabase Storage
+// File Upload to Supabase Storage + Media Meta Sync
 app.post("/api/upload", adminAuth, upload.single("image"), async (req, res) => {
   if (!req.file) return res.status(400).json({ message: "No file uploaded" });
   
@@ -439,16 +826,33 @@ app.post("/api/upload", adminAuth, upload.single("image"), async (req, res) => {
      const safeName = req.file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '');
      const fileName = `${Date.now()}-${safeName}`;
      
-     const { data, error } = await supabase.storage
+     // 1. Upload to Storage
+     const { data: storageData, error: storageError } = await supabase.storage
        .from('images')
        .upload(fileName, req.file.buffer, {
           contentType: req.file.mimetype
        });
        
-     if (error) throw error;
-     
+     if (storageError) throw storageError;
+
      const { data: publicUrlData } = supabase.storage.from('images').getPublicUrl(fileName);
-     res.json({ url: publicUrlData.publicUrl });
+     const publicUrl = publicUrlData.publicUrl;
+
+     // 2. Store Metadata for indexing
+     const { error: dbError } = await supabase.from('media_assets').insert([{
+        file_name: fileName,
+        file_url: publicUrl,
+        file_size: req.file.size,
+        mime_type: req.file.mimetype
+     }]);
+
+     if (dbError) {
+        // Cleanup storage if DB fails
+        await supabase.storage.from('images').remove([fileName]);
+        throw dbError;
+     }
+     
+     res.json({ url: publicUrl });
   } catch (error) {
      console.error("Storage Upload Failure:", error);
      res.status(500).json({ message: "Storage Upload Failed: " + error.message });

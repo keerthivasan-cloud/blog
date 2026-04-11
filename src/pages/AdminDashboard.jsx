@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useContent } from '../context/ContentContext';
 import { useNavigate, Link } from 'react-router-dom';
@@ -7,16 +7,92 @@ import {
   Search, Filter, ExternalLink, MoreVertical, Layout, Newspaper,
   Users, Layers, Bell, CheckCircle, Clock, AlertCircle, Moon, Sun, TrendingUp, Zap, Sparkles
 } from 'lucide-react';
+import axios from 'axios';
+import { API_BASE_URL, ADMIN_SECRET } from '../config';
+import AdminMedia from '../admin-hubs/AdminMedia';
+import AdminSubscribers from '../admin-hubs/AdminSubscribers';
+import ConfirmModal from '../components/ConfirmModal';
+import { StatCardSkeleton, ArticleListItemSkeleton } from '../components/SkeletonLoaders';
+import SearchOverlay from '../components/SearchOverlay';
+import { toast } from 'react-hot-toast';
+
+import AdminLayout from '../components/AdminLayout';
 
 const AdminDashboard = () => {
   const { articles, deleteArticle, logout, user, darkMode, toggleTheme } = useContent();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [activeHub, setActiveHub] = useState('Overview');
+  const [showConfig, setShowConfig] = useState(false);
+  const [stats, setStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState({ open: false, id: null, batch: false });
+  const [selectedArticles, setSelectedArticles] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
   const navigate = useNavigate();
 
-  const handleDelete = (id) => {
-    if (window.confirm('Delete this article permamently?')) {
-      deleteArticle(id);
+  const authHeader = { Authorization: `Bearer ${ADMIN_SECRET}` };
+
+  const fetchStats = async () => {
+    setLoadingStats(true);
+    try {
+      const res = await axios.get(`${API_BASE_URL}/admin/stats`, { headers: authHeader });
+      setStats(res.data);
+    } catch (err) {
+      toast.error("Analytics Sync Failure");
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeHub === 'Overview') fetchStats();
+  }, [activeHub]);
+
+  useEffect(() => {
+    const handleToggleSearch = () => setIsSearchOpen(prev => !prev);
+    document.addEventListener('toggleSearch', handleToggleSearch);
+    return () => document.removeEventListener('toggleSearch', handleToggleSearch);
+  }, []);
+
+  if (!user) return null;
+
+  const handleHubChange = (hub) => {
+    setActiveHub(hub);
+    setSearchTerm('');
+  };
+
+  const handleDelete = async () => {
+    if (!confirmDelete.id && !confirmDelete.batch) return;
+    
+    try {
+      if (confirmDelete.batch) {
+        await Promise.all(selectedArticles.map(id => deleteArticle(id)));
+        setSelectedArticles([]);
+        toast.success(`Purged ${selectedArticles.length} Nodes`);
+      } else {
+        await deleteArticle(confirmDelete.id);
+        toast.success("Intelligence Node Purged");
+      }
+      fetchStats();
+      setConfirmDelete({ open: false, id: null, batch: false });
+    } catch (err) {
+      toast.error("Cleanup Failure");
+    }
+  };
+
+  const toggleSelect = (id) => {
+    setSelectedArticles(prev => 
+      prev.includes(id) ? prev.filter(a => a !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedArticles.length === filteredArticles.length) {
+      setSelectedArticles([]);
+    } else {
+      setSelectedArticles(filteredArticles.map(a => a._id || a.id));
     }
   };
 
@@ -45,59 +121,25 @@ const AdminDashboard = () => {
   const topNiche = categoryMetrics[0]?.name || 'N/A';
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex overflow-hidden font-['Inter'] text-slate-900 dark:text-white transition-colors duration-500">
-      
-      {/* Sidebar - Dark/Light Adaptive */}
-      <aside className="w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col p-8 z-20 shadow-[20px_0_40px_rgba(0,0,0,0.02)] transition-colors duration-500">
-        <div className="flex items-center gap-3 mb-10 px-2">
-          <div className="w-10 h-10 bg-[#f97316] rounded-xl flex items-center justify-center shadow-[0_5px_15px_rgba(249,115,22,0.3)]">
-            <Newspaper className="w-6 h-6 text-white" />
-          </div>
-          <span className="text-2xl font-black font-['Outfit'] tracking-tighter dark:text-white">NewsForge</span>
+    <AdminLayout>
+      <div className="max-w-7xl mx-auto px-5 md:px-8 py-8 md:py-12">
+        {/* Hub Navigation Tabs */}
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar mb-8" style={{ borderBottom: '1px solid var(--border)' }}>
+          {['Overview', 'Subscribers', 'Media'].map((hub) => (
+            <button
+              key={hub}
+              onClick={() => handleHubChange(hub)}
+              className="shrink-0 px-4 py-3.5 text-sm font-medium transition-colors border-b-2 cursor-pointer bg-transparent"
+              style={{
+                color: activeHub === hub ? 'var(--accent)' : 'var(--text-muted)',
+                borderColor: activeHub === hub ? 'var(--accent)' : 'transparent',
+                fontWeight: activeHub === hub ? 700 : 500,
+              }}
+            >
+              {hub}
+            </button>
+          ))}
         </div>
-
-        <div className="space-y-8 flex-1">
-          <div className="space-y-1">
-            <p className="text-[10px] text-slate-300 dark:text-slate-600 uppercase tracking-widest font-black px-4 mb-4">Command Center</p>
-            <NavItem icon={<BarChart className="w-4 h-4" />} label="Overview" active={true} />
-            <NavItem icon={<FileText className="w-4 h-4" />} label="All Stories" />
-            <Link to="/admin/editor/new" className="no-underline text-inherit group">
-               <NavItem icon={<Plus className="w-4 h-4" />} label="New Drafting" />
-            </Link>
-            <Link to="/admin/write" className="no-underline text-inherit group">
-               <NavItem icon={<Zap className="w-4 h-4 text-orange-500" />} label="AI Synthesis" />
-            </Link>
-          </div>
-
-          <div className="space-y-1">
-            <p className="text-[10px] text-slate-300 dark:text-slate-600 uppercase tracking-widest font-black px-4 mb-4">System Archive</p>
-            <NavItem icon={<Layers className="w-4 h-4" />} label="Sections" />
-            <NavItem icon={<Users className="w-4 h-4" />} label="Team Hub" />
-            <NavItem icon={<Settings className="w-4 h-4" />} label="Engine Config" />
-          </div>
-        </div>
-
-        <div className="mt-auto space-y-4 pt-10 border-t border-slate-100 dark:border-slate-800">
-           <button 
-             onClick={toggleTheme}
-             className="w-full flex items-center gap-3 text-slate-400 hover:text-primary transition-all text-sm font-bold px-4 py-3 rounded-xl border-none bg-slate-50 dark:bg-slate-800 cursor-pointer mb-2"
-           >
-             {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-             {darkMode ? 'Switch to Light' : 'Switch to Dark'}
-           </button>
-          <Link to="/" className="flex items-center gap-3 text-slate-400 hover:text-primary transition-all text-sm font-bold px-4 no-underline group">
-            <ExternalLink className="w-4 h-4 group-hover:scale-110" /> Frontend Site
-          </Link>
-          <button 
-             onClick={() => { logout(); navigate('/admin/login'); }}
-             className="w-full flex items-center gap-3 text-slate-400 hover:text-red-500 transition-all text-sm font-bold px-4 py-3 rounded-xl border-none bg-transparent cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" /> Shutdown Session
-          </button>
-        </div>
-      </aside>
-
-      {/* Primary Workspace */}
       <main className="flex-1 overflow-y-auto">
         <header className="sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-3xl border-b border-slate-200 dark:border-slate-800 p-8 flex items-center justify-between z-10 transition-all duration-500">
           <div className="relative w-96 group">
@@ -110,197 +152,272 @@ const AdminDashboard = () => {
               className="w-full bg-slate-100 dark:bg-slate-800 border border-transparent rounded-2xl p-4 pl-12 text-sm text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-700 focus:border-primary/20 outline-none transition-all shadow-inner"
             />
           </div>
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-3 pr-6 border-r border-slate-100 dark:border-slate-800 text-[10px] font-black uppercase tracking-widest text-slate-300 dark:text-slate-600">
+          <div className="flex items-center gap-6 relative">
+            <div className="flex items-center gap-3 pr-6 border-r border-slate-100 dark:border-white/5 text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-600">
                Network: <span className="text-green-500">Secured</span>
                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
             </div>
-            <button className="p-3 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-400 hover:border-primary/30 transition-all cursor-pointer relative shadow-sm">
+            <button 
+              onClick={() => setShowNotifications(!showNotifications)}
+              className={`p-3 rounded-2xl border transition-all cursor-pointer relative shadow-sm ${showNotifications ? 'bg-primary text-white border-primary' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-white/10 text-slate-400 hover:border-primary/30'}`}
+            >
                <Bell className="w-5 h-5" />
                <div className="absolute top-3 right-3 w-2 h-2 bg-primary rounded-full border-2 border-white dark:border-slate-800" />
             </button>
+
+            <AnimatePresence>
+              {showNotifications && (
+                <>
+                  <div className="fixed inset-0 z-[100]" onClick={() => setShowNotifications(false)} />
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 top-full mt-4 w-96 bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/10 rounded-[2.5rem] shadow-2xl z-[110] overflow-hidden"
+                  >
+                    <div className="p-8 border-b border-slate-50 dark:border-white/5 bg-slate-50/50 dark:bg-white/5">
+                       <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-900 dark:text-white flex items-center gap-3">
+                         <Bell className="w-3.5 h-3.5 text-primary" /> Active Transmissions
+                       </h4>
+                    </div>
+                    <div className="max-h-[400px] overflow-y-auto p-4 space-y-2">
+                       <NotificationItem icon={<CheckCircle className="w-4 h-4 text-green-500" />} title="Sync Success" time="2m ago" />
+                       <NotificationItem icon={<AlertCircle className="w-4 h-4 text-orange-500" />} title="System Backup" time="45m ago" />
+                       <NotificationItem icon={<TrendingUp className="w-4 h-4 text-primary" />} title="Traffic Spike" time="2h ago" />
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
           </div>
         </header>
 
-        <section className="p-12 space-y-12 max-w-7xl mx-auto">
-          {/* Quick Analytics Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <StatCard label="Live Assets" value={publishedCount} icon={<CheckCircle className="w-6 h-6 text-green-500" />} trend="+3 this week" />
-            <StatCard label="Total Reach" value={totalViews.toLocaleString()} icon={<Users className="w-6 h-6 text-primary" />} trend="Aggregated Views" />
-            <StatCard label="Dominant Niche" value={topNiche} icon={<TrendingUp className="w-6 h-6 text-orange-400" />} trend="High Velocity" />
-            <StatCard label="Flow Cycle" value="98%" icon={<CheckCircle className="w-6 h-6 text-emerald-400" />} trend="Optimal" />
-          </div>
+        <div className="space-y-12">
+          {activeHub === 'Overview' && (
+             loadingStats ? (
+               <StatCardSkeleton />
+             ) : (
+               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                 <div className="card p-6 border group" style={{ borderColor: 'var(--border)', background: 'var(--bg-card)' }}>
+                   <div className="flex items-center gap-3 mb-2" style={{ color: 'var(--text-secondary)' }}><FileText className="w-5 h-5" /> <span className="text-sm font-semibold uppercase tracking-wider">Total Nodes</span></div>
+                   <div className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>{stats?.articles || 0}</div>
+                 </div>
+                 <div className="card p-6 border group" style={{ borderColor: 'var(--border)', background: 'var(--bg-card)' }}>
+                   <div className="flex items-center gap-3 mb-2" style={{ color: 'var(--text-secondary)' }}><Users className="w-5 h-5" /> <span className="text-sm font-semibold uppercase tracking-wider">Global Reach</span></div>
+                   <div className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>{stats?.views?.toLocaleString() || 0}</div>
+                 </div>
+                 <div className="card p-6 border group" style={{ borderColor: 'var(--border)', background: 'var(--bg-card)' }}>
+                   <div className="flex items-center gap-3 mb-2" style={{ color: 'var(--text-secondary)' }}><TrendingUp className="w-5 h-5" /> <span className="text-sm font-semibold uppercase tracking-wider">Dominant Niche</span></div>
+                   <div className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{topNiche}</div>
+                 </div>
+                 <div className="card p-6 border group" style={{ borderColor: 'var(--border)', background: 'var(--bg-card)' }}>
+                   <div className="flex items-center gap-3 mb-2" style={{ color: 'var(--text-secondary)' }}><BarChart className="w-5 h-5" /> <span className="text-sm font-semibold uppercase tracking-wider">Storage</span></div>
+                   <div className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>{stats?.media || 0}</div>
+                 </div>
+               </div>
+             )
+          )}
 
           {/* NEWSFORGE v4.0: NICHE DOMINANCE HUB */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-12 rounded-[3.5rem] border border-slate-100 dark:border-slate-800 shadow-2xl shadow-slate-200/10">
-               <div className="flex items-center justify-between mb-12">
-                  <div>
-                    <h3 className="text-2xl font-black font-['Outfit'] -tracking-tight dark:text-white uppercase">Niche Dominance Index</h3>
-                    <p className="text-[10px] text-slate-400 dark:text-slate-600 font-bold uppercase tracking-[0.4em] mt-2">View Velocity vs Content Volume</p>
-                  </div>
-                  <BarChart className="w-8 h-8 text-slate-100 dark:text-slate-800" />
-               </div>
-               
-               <div className="space-y-10">
-                  {categoryMetrics.map((cat, idx) => (
-                    <div key={cat.name} className="space-y-4">
-                       <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-widest">
-                          <div className="flex items-center gap-3">
-                             <span className="text-slate-300 dark:text-slate-700">0{idx+1}</span>
-                             <span className="dark:text-white">{cat.name}</span>
-                          </div>
-                          <div className="flex gap-6">
-                             <span className="text-slate-400">Vol: {cat.count}</span>
-                             <span className="text-primary">Reach: {cat.views}</span>
-                          </div>
-                       </div>
-                       <div className="h-3 w-full bg-slate-50 dark:bg-slate-850 rounded-full overflow-hidden flex">
-                          <motion.div 
-                            initial={{ width: 0 }}
-                            animate={{ width: `${(cat.views / (categoryMetrics[0]?.views || 1)) * 100}%` }}
-                            transition={{ duration: 1, delay: idx * 0.1 }}
-                            className="bg-primary h-full rounded-full shadow-[0_0_15px_rgba(249,115,22,0.4)]"
+          {activeHub === 'Overview' ? (
+            <div className="space-y-8">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-2xl font-bold" style={{ letterSpacing: '-0.03em' }}>Content Ecosystem</h2>
+                  <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>{filteredArticles.length} matching story assets</p>
+                </div>
+                <div className="flex flex-col md:flex-row gap-4 items-center">
+                   <div className="relative">
+                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-50" />
+                     <input 
+                       type="text" 
+                       placeholder="Search content repository..." 
+                       value={searchTerm}
+                       onChange={(e) => setSearchTerm(e.target.value)}
+                       className="input pl-10 h-10 w-64 text-sm"
+                     />
+                   </div>
+                   <select 
+                     value={selectedCategory} 
+                     onChange={(e) => setSelectedCategory(e.target.value)}
+                     className="input h-10 text-sm cursor-pointer"
+                   >
+                     {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                   </select>
+
+                  <Link to="/admin/editor/new" className="btn-primary py-2 px-5 no-underline ml-2 text-sm gap-2 whitespace-nowrap">
+                    <Plus className="w-4 h-4" /> Compose Post
+                  </Link>
+                </div>
+              </div>
+
+              <div className="card border overflow-hidden mt-8" style={{ borderColor: 'var(--border)', background: 'var(--bg-card)' }}>
+                <table className="w-full text-left border-collapse text-sm">
+                    <thead>
+                      <tr className="border-b" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-soft)', color: 'var(--text-muted)' }}>
+                        <th className="px-6 py-4 text-center w-16">
+                          <input 
+                            type="checkbox"
+                            className="w-4 h-4 rounded border-gray-300 accent-primary cursor-pointer"
+                            checked={selectedArticles.length === filteredArticles.length && filteredArticles.length > 0}
+                            onChange={toggleSelectAll}
                           />
-                       </div>
-                    </div>
-                  ))}
-               </div>
-            </div>
-
-            <div className="bg-slate-900 p-12 rounded-[3.5rem] relative overflow-hidden group">
-               <Sparkles className="absolute top-[-10%] right-[-10%] w-64 h-64 text-white/5 group-hover:rotate-45 transition-transform duration-1000" />
-               <div className="relative z-10">
-                  <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center mb-8 border border-primary/20">
-                    <Zap className="w-6 h-6 text-primary fill-primary" />
-                  </div>
-                  <h3 className="text-2xl font-black font-['Outfit'] text-white uppercase mb-4">Strategic<br />Leverage</h3>
-                  <p className="text-white/40 font-bold uppercase text-[9px] tracking-[0.3em] leading-loose mb-10">
-                    Your {topNiche} content has the highest view velocity ({categoryMetrics[0]?.velocity}x). Consider increasing broadcast frequency in this partition.
-                  </p>
-                  <button className="w-full py-4 rounded-2xl bg-white text-slate-900 font-black text-[10px] uppercase tracking-widest hover:bg-primary hover:text-white transition-all cursor-pointer border-none shadow-xl">
-                    Generate Report
-                  </button>
-               </div>
-            </div>
-          </div>
-
-          <div className="space-y-8">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h2 className="text-3xl font-black font-['Outfit'] -tracking-tight dark:text-white">Content Ecosystem</h2>
-                <p className="text-slate-400 dark:text-slate-600 font-bold text-[10px] uppercase tracking-widest mt-2">{filteredArticles.length} matching story assets</p>
-              </div>
-              <div className="flex gap-4">
-                 <div className="flex bg-white dark:bg-slate-900 p-1 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                    {['All', 'Tech', 'Business', 'Finance'].map(cat => (
-                      <button 
-                        key={cat}
-                        onClick={() => setSelectedCategory(cat)}
-                        className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all border-none cursor-pointer ${selectedCategory === cat ? 'bg-primary text-white shadow-xl shadow-primary/20 translate-y-[-1px]' : 'text-slate-400 hover:text-slate-900 dark:hover:text-white bg-transparent'}`}
-                      >
-                        {cat}
-                      </button>
-                    ))}
-                 </div>
-                 <Link to="/admin/editor/new" className="primary-btn no-underline px-8 shadow-[0_10px_30px_rgba(249,115,22,0.3)]">
-                   <Plus className="w-5 h-5" /> New Story
-                 </Link>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 rounded-[3rem] border border-slate-200 dark:border-slate-800 overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,0.03)] transition-colors duration-500">
-               <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50/50 dark:bg-slate-850 border-b border-slate-100 dark:border-slate-800 text-[10px] uppercase font-black tracking-[0.2em] text-slate-300 dark:text-slate-600">
-                      <th className="px-10 py-8">Information Asset</th>
-                      <th className="px-10 py-8 text-center">Status</th>
-                      <th className="px-10 py-8">Section</th>
-                      <th className="px-10 py-8">Access Level</th>
-                      <th className="px-10 py-8 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <AnimatePresence mode="popLayout">
-                    {filteredArticles.map((article, idx) => (
-                      <motion.tr 
-                        key={article._id || article.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.05 }}
-                        className="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50/80 dark:hover:bg-slate-800/20 transition-all group"
-                      >
-                        <td className="px-10 py-8">
-                           <div className="flex items-center gap-6">
-                              <div className="w-16 h-12 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden flex-shrink-0 shadow-sm">
-                                 <img src={article.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                        </th>
+                        <th className="px-6 py-4 font-semibold uppercase tracking-wider text-xs">Title</th>
+                        <th className="px-6 py-4 font-semibold uppercase tracking-wider text-xs">Author</th>
+                        <th className="px-6 py-4 font-semibold text-center uppercase tracking-wider text-xs">Views</th>
+                        <th className="px-6 py-4 font-semibold text-center uppercase tracking-wider text-xs">Published</th>
+                        <th className="px-6 py-4 text-center font-semibold uppercase tracking-wider text-xs">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y" style={{ borderColor: 'var(--border)' }}>
+                      {filteredArticles.length === 0 ? (
+                        <tr>
+                          <td colSpan="6" className="py-20 text-center opacity-50">
+                             <div className="flex flex-col items-center">
+                                <Search className="w-10 h-10 mb-4 opacity-30" />
+                                <span className="font-medium text-lg">No content matched parameters.</span>
+                             </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredArticles.map(article => (
+                          <motion.tr 
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                            key={article._id || article.slug} 
+                            className="transition-colors hover:bg-[var(--bg-soft)]"
+                          >
+                            <td className="px-6 py-4 text-center">
+                               <input 
+                                 type="checkbox"
+                                 className="w-4 h-4 rounded border-gray-300 accent-[#f97316] cursor-pointer"
+                                 checked={selectedArticles.includes(article._id || article.id)}
+                                 onChange={() => toggleSelect(article._id || article.id)}
+                               />
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="font-semibold text-base mb-1 line-clamp-1">
+                                <Link to={`/admin/editor/${article.slug}`} className="no-underline text-inherit hover:text-[var(--accent)] transition-colors">{article.title}</Link>
                               </div>
-                              <div className="max-w-md">
-                                 <div className="font-bold text-slate-800 dark:text-slate-100 text-lg font-['Outfit'] leading-tight group-hover:text-primary transition-colors truncate">{article.title}</div>
-                                 <div className="text-[10px] text-slate-400 dark:text-slate-600 font-bold mt-2 uppercase tracking-widest">Entry Ref: {article.author} / {article.date}</div>
+                              <div className="flex gap-2">
+                                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase" style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }}>{article.category}</span>
                               </div>
-                           </div>
-                        </td>
-                        <td className="px-10 py-8 text-center text-inherit">
-                          <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${article.status === 'published' ? 'bg-green-50 dark:bg-green-500/10 text-green-500 border-green-100 dark:border-green-500/20' : 'bg-orange-50 dark:bg-orange-500/10 text-orange-500 border-orange-100 dark:border-orange-500/20'}`}>
-                            {article.status || 'published'}
-                          </span>
-                        </td>
-                        <td className="px-10 py-8">
-                           <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-700 uppercase tracking-widest">{article.category}</span>
-                        </td>
-                        <td className="px-10 py-8">
-                           <div className="flex items-center gap-2 text-xs font-bold text-slate-400 dark:text-slate-600">
-                              <Layers className="w-3.5 h-3.5 opacity-40" />
-                              Public Archive
-                           </div>
-                        </td>
-                        <td className="px-10 py-8 text-right">
-                           <div className="flex items-center justify-end gap-3 translate-x-2 group-hover:translate-x-0 transition-transform opacity-40 group-hover:opacity-100">
-                             <button 
-                               onClick={() => navigate(`/admin/editor/${article._id || article.id}`)}
-                               className="p-3 rounded-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-400 hover:text-primary transition-all shadow-sm cursor-pointer"
-                             >
-                               <Edit2 className="w-4 h-4" />
-                             </button>
-                             <button 
-                               onClick={() => handleDelete(article._id || article.id)}
-                               className="p-3 rounded-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-400 hover:text-red-500 transition-all shadow-sm cursor-pointer"
-                             >
-                               <Trash2 className="w-4 h-4" />
-                             </button>
-                           </div>
-                        </td>
-                      </motion.tr>
-                    ))}
-                    </AnimatePresence>
-                  </tbody>
-               </table>
+                            </td>
+                            <td className="px-6 py-4 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>{article.author}</td>
+                            <td className="px-6 py-4 text-center font-bold" style={{ color: 'var(--text-secondary)' }}>{article.views?.toLocaleString() || 0}</td>
+                            <td className="px-6 py-4 text-center" style={{ color: 'var(--text-secondary)' }}>
+                              {new Date(article.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                               <div className="flex justify-center gap-2">
+                                  <Link to={`/admin/editor/${article.slug}`} className="p-2 border rounded-md transition-colors bg-white hover:border-[var(--accent)] hover:text-[var(--accent)] dark:bg-slate-800 dark:border-slate-700 dark:hover:border-orange-500" style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
+                                     <Edit2 className="w-4 h-4" />
+                                  </Link>
+                                  <button onClick={() => setConfirmDelete({ open: true, id: article._id || article.id, batch: false })} className="p-2 border rounded-md transition-colors bg-white hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 dark:bg-slate-800 dark:border-slate-700 dark:hover:border-rose-900/50 dark:hover:text-rose-400 cursor-pointer" style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
+                                     <Trash2 className="w-4 h-4" />
+                                  </button>
+                               </div>
+                            </td>
+                          </motion.tr>
+                        ))
+                      )}
+                    </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        </section>
+          ) : activeHub === 'Subscribers' ? (
+            <div className="anim-fade-in"><AdminSubscribers /></div>
+          ) : activeHub === 'Media' ? (
+            <div className="anim-fade-in"><AdminMedia /></div>
+          ) : null}
+        </div>
       </main>
-    </div>
+
+      <ConfirmModal 
+        isOpen={confirmDelete.open}
+        onClose={() => setConfirmDelete({ open: false, id: null, batch: false })}
+        onConfirm={handleDelete}
+        title={confirmDelete.batch ? "Purge Multiple Nodes" : "Purge Intelligence Node"}
+        message={confirmDelete.batch ? `Are you sure you want to permanently execute ${selectedArticles.length} nodes from the network?` : "Are you sure you want to permanently execute this node from the network?"}
+      />
+
+      <SearchOverlay 
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+      />
+
+      {/* Batch Action Bar */}
+      <AnimatePresence>
+        {selectedArticles.length > 0 && (
+          <motion.div 
+            initial={{ y: 100 }}
+            animate={{ y: 0 }}
+            exit={{ y: 100 }}
+            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-slate-900/90 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-4 flex items-center gap-10 shadow-2xl"
+          >
+             <div className="flex items-center gap-4 pl-6 border-r border-white/10 pr-10">
+                <span className="text-[10px] font-black tracking-widest uppercase text-slate-500">Selected</span>
+                <span className="text-2xl font-black text-white font-['Outfit']">{selectedArticles.length}</span>
+             </div>
+             <div className="flex items-center gap-3 pr-4">
+                <button 
+                  onClick={() => setConfirmDelete({ open: true, batch: true })}
+                  className="px-8 py-4 rounded-2xl bg-red-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-red-600 transition-all cursor-pointer border-none shadow-lg shadow-red-500/20"
+                >
+                  Purge Batch
+                </button>
+                <button 
+                  onClick={() => setSelectedArticles([])}
+                  className="px-8 py-4 rounded-2xl bg-white/5 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all cursor-pointer border-none"
+                >
+                  Discard Selection
+                </button>
+             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      </div>
+    </AdminLayout>
   );
 };
 
-const NavItem = ({ icon, label, active }) => (
-  <button className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-bold transition-all border-none cursor-pointer ${active ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white bg-transparent'}`}>
-    {icon} {label}
+const NotificationItem = ({ icon, title, time }) => (
+  <div className="flex items-center gap-6 p-5 hover:bg-slate-50 dark:hover:bg-white/5 rounded-3xl transition-all cursor-pointer group">
+     <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
+        {icon}
+     </div>
+     <div className="flex-1 text-left">
+        <div className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">{title}</div>
+        <div className="text-[9px] font-bold text-slate-400 dark:text-slate-600 mt-1 uppercase tracking-widest">{time}</div>
+     </div>
+  </div>
+);
+
+const NavItem = ({ icon, label, active, onClick }) => (
+  <button 
+    onClick={onClick}
+    className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all group font-black uppercase text-[10px] tracking-widest border-none cursor-pointer ${active ? 'bg-primary/10 text-primary border border-primary/20 shadow-[0_10px_20px_rgba(249,115,22,0.1)]' : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 bg-transparent'}`}
+  >
+    <div className={`transition-transform group-hover:scale-110 ${active ? 'text-primary' : ''}`}>{icon}</div>
+    <span className={active ? 'text-primary' : ''}>{label}</span>
   </button>
 );
 
 const StatCard = ({ label, value, icon, trend }) => (
-  <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-[0_15px_60px_-15px_rgba(0,0,0,0.03)] dark:shadow-none space-y-6 hover:translate-y-[-5px] transition-all group">
-    <div className="flex items-center justify-between">
-       <span className="text-[10px] text-slate-300 dark:text-slate-600 uppercase tracking-widest font-black">{label}</span>
-       <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-50 dark:border-slate-700 text-slate-300 dark:text-slate-600 group-hover:bg-primary/10 group-hover:text-primary transition-all">
+  <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl p-10 rounded-[3.5rem] border border-slate-200 dark:border-white/5 shadow-[0_15px_60px_-15px_rgba(0,0,0,0.03)] dark:shadow-none space-y-8 hover:translate-y-[-8px] transition-all group relative overflow-hidden">
+    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-10 -mt-10 group-hover:bg-primary/10 transition-colors" />
+    <div className="flex items-center justify-between relative z-10">
+       <span className="text-[9px] text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] font-black">{label}</span>
+       <div className="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 text-slate-400 dark:text-slate-500 flex items-center justify-center group-hover:bg-primary group-hover:text-white group-hover:shadow-lg group-hover:shadow-orange-500/20 transition-all group-hover:rotate-6">
           {icon}
        </div>
     </div>
-    <div>
-      <div className="text-4xl font-black font-['Outfit'] text-slate-900 dark:text-white">{value}</div>
-      <div className="text-[10px] font-black uppercase text-slate-300 dark:text-slate-600 mt-2 tracking-widest">{trend}</div>
+    <div className="relative z-10">
+      <div className="text-5xl font-black font-['Outfit'] text-slate-900 dark:text-white tracking-tighter">{value}</div>
+      <div className="flex items-center gap-2 mt-3">
+        <div className="px-2 py-0.5 rounded-md bg-green-500/10 text-[8px] font-black uppercase tracking-widest text-green-500">Pulse</div>
+        <div className="text-[9px] font-bold text-slate-400 dark:text-slate-600 tracking-wider">/ {trend}</div>
+      </div>
     </div>
   </div>
 );

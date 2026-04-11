@@ -3,7 +3,7 @@ import axios from 'axios';
 import { initialArticles } from '../data/mockArticles';
 import { fetchMarketData } from '../services/marketData';
 
-import API_BASE_URL from '../config';
+import { API_BASE_URL, ADMIN_SECRET } from '../config';
 
 const ContentContext = createContext();
 
@@ -59,7 +59,7 @@ export const ContentProvider = ({ children }) => {
     const fetchArticles = async () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/articles`);
-        setArticles(res.data);
+        setArticles(res.data.articles || []);
       } catch (error) {
         console.error("Backend Synchronization Failure", error);
       }
@@ -79,7 +79,7 @@ export const ContentProvider = ({ children }) => {
   const refreshArticles = async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/articles`);
-      setArticles(res.data);
+      setArticles(res.data.articles || []);
     } catch (error) {
       console.error("Manual Refresh Failure", error);
     }
@@ -88,15 +88,18 @@ export const ContentProvider = ({ children }) => {
 
   const deleteArticle = async (id) => {
     try {
-      await axios.delete(`${API_BASE_URL}/articles/${id}`);
-      setArticles(prev => prev.filter(a => a._id !== id));
+      await axios.delete(`${API_BASE_URL}/articles/${id}`, {
+        headers: { Authorization: `Bearer ${ADMIN_SECRET}` }
+      });
+      setArticles(prev => prev.filter(a => (a.id || a._id) !== id));
+      toast.success("Intelligence node purged from archive");
     } catch (error) {
       console.error("Archive Purge Failure", error);
     }
   };
 
   const login = (username, password) => {
-    if (username === 'admin' && password === 'admin123') {
+    if (username === 'admin' && password === ADMIN_SECRET) {
       const userData = { username: 'admin', role: 'admin' };
       setUser(userData);
       localStorage.setItem('newsforge_user', JSON.stringify(userData));

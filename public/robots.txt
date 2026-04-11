@@ -1,4 +1,6 @@
+# NewsForge Robots Protocol
 User-agent: *
 Allow: /
 
-Sitemap: https://newsforge.in/sitemap.xml
+# Sitemap Location
+Sitemap: http://localhost:5001/sitemap.xml

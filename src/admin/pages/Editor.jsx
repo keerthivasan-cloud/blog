@@ -9,11 +9,11 @@ import {
   ChevronUp, ChevronDown, Quote, List as ListIcon, Info, History, X, RotateCcw,
   Check
 } from 'lucide-react';
-import { BlockRenderer } from '../components/ArticlePageComponents';
-import API_BASE_URL, { ADMIN_SECRET } from '../config';
-import VersionModal from '../components/VersionModal';
+import { BlockRenderer } from '../../components/ArticlePageComponents';
+import API_BASE_URL, { ADMIN_SECRET } from '../../config';
+import VersionModal from '../../components/VersionModal';
 import { toast } from 'react-hot-toast';
-import AdminLayout from '../components/AdminLayout';
+import AdminLayout from '../layout/AdminLayout';
 
 const CustomSelect = ({ label, value, options, onChange, icon }) => {
   const [isOpen, setIsOpen] = useState(false);

@@ -1,265 +1,467 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useContent } from '../context/ContentContext';
-import { 
-  BookOpen, PenTool, TrendingUp, Search, Github, Twitter, 
-  Linkedin, ArrowRight, Clock, Star, Zap, ChevronRight,
-  Sun, Moon
-} from 'lucide-react';
+import { Search, Sun, Moon, Menu, X, Clock, PenTool } from 'lucide-react';
 
+/* Inline SVGs for deprecated lucide brand icons */
+const IconTwitter  = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.74l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>;
+const IconGithub   = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>;
+const IconLinkedin = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>;
+import axios from 'axios';
+import API_BASE_URL from '../config';
+import toast, { Toaster } from 'react-hot-toast';
 import SearchOverlay from './SearchOverlay';
- 
+
+const NotificationPrompt = React.lazy(() => import('./NotificationPrompt'));
+const CookieConsent     = React.lazy(() => import('./CookieConsent'));
+
+/* ─── Theme Toggle ────────────────────────────── */
 const ThemeToggle = () => {
   const { darkMode, toggleTheme } = useContent();
-
   return (
     <button
       onClick={toggleTheme}
-      className="p-2.5 rounded-2xl border-none cursor-pointer relative overflow-hidden group transition-all duration-500 hover:scale-110 active:scale-95"
-      style={{ background: 'var(--bg-soft)' }}
+      aria-label="Toggle theme"
+      className="p-2 rounded-md border border-[var(--border)] bg-transparent cursor-pointer transition-colors hover:bg-[var(--bg-soft)]"
     >
       <AnimatePresence mode="wait" initial={false}>
         {darkMode ? (
-          <motion.div
-            key="moon"
-            initial={{ y: 20, rotate: 45, opacity: 0 }}
-            animate={{ y: 0, rotate: 0, opacity: 1 }}
-            exit={{ y: -20, rotate: -45, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "backOut" }}
+          <motion.span key="moon"
+            initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -8, opacity: 0 }} transition={{ duration: 0.2 }}
           >
-            <Moon className="w-5 h-5 text-indigo-400" />
-          </motion.div>
+            <Moon className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+          </motion.span>
         ) : (
-          <motion.div
-            key="sun"
-            initial={{ y: 20, rotate: 45, opacity: 0 }}
-            animate={{ y: 0, rotate: 0, opacity: 1 }}
-            exit={{ y: -20, rotate: -45, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "backOut" }}
+          <motion.span key="sun"
+            initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -8, opacity: 0 }} transition={{ duration: 0.2 }}
           >
-            <Sun className="w-5 h-5 text-orange-500" />
-          </motion.div>
+            <Sun className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+          </motion.span>
         )}
       </AnimatePresence>
     </button>
   );
 };
 
+/* ─── Market Strip ────────────────────────────── */
 const LiveMarketStrip = () => {
   const { marketData } = useContent();
-  
+  if (!marketData || marketData.length === 0) return null;
+
   return (
-    <div className="py-2 px-8 overflow-hidden relative flex items-center shrink-0" style={{ background: 'var(--bg-main)', borderBottom: '1px solid var(--border)' }}>
-      <div className="flex items-center gap-12 animate-marquee whitespace-nowrap text-[9px] font-bold uppercase tracking-[0.2em] mono">
-        {marketData.map((item, idx) => (
-          <span key={idx} className="flex items-center gap-3 group px-4">
+    <div
+      className="py-1.5 px-4 overflow-hidden relative flex items-center"
+      style={{ background: 'var(--bg-soft)', borderBottom: '1px solid var(--border)' }}
+    >
+      <div className="flex items-center gap-8 animate-marquee whitespace-nowrap text-[11px] font-medium">
+        {[...marketData, ...marketData].map((item, idx) => (
+          <span key={idx} className="flex items-center gap-2">
             <span style={{ color: 'var(--text-muted)' }}>{item.name}</span>
-            <span style={{ color: 'var(--text-primary)' }} className="font-black tracking-tighter">{item.price}</span>
+            <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{item.price}</span>
             <span className="flex items-center gap-1" style={{ color: item.isUp ? 'var(--green)' : 'var(--red)' }}>
-              {item.isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingUp className="w-3 h-3 rotate-180" />}
-              {item.isUp ? '+' : ''}{item.change}%
-            </span>
-          </span>
-        ))}
-        {/* Continuous loop duplication */}
-        {marketData.map((item, idx) => (
-          <span key={`dup-${idx}`} className="flex items-center gap-3 group px-4">
-            <span style={{ color: 'var(--text-muted)' }}>{item.name}</span>
-            <span style={{ color: 'var(--text-primary)' }} className="font-black tracking-tighter">{item.price}</span>
-            <span className="flex items-center gap-1" style={{ color: item.isUp ? 'var(--green)' : 'var(--red)' }}>
-              {item.isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingUp className="w-3 h-3 rotate-180" />}
-              {item.isUp ? '+' : ''}{item.change}%
+              {item.isUp ? '▲' : '▼'} {item.isUp ? '+' : ''}{item.change}%
             </span>
           </span>
         ))}
       </div>
-      <div className="absolute left-0 top-0 bottom-0 w-24 z-10" style={{ background: 'linear-gradient(to right, var(--bg-main), transparent)' }} />
-      <div className="absolute right-0 top-0 bottom-0 w-24 z-10" style={{ background: 'linear-gradient(to left, var(--bg-main), transparent)' }} />
+      <div className="absolute left-0 top-0 bottom-0 w-16 pointer-events-none" style={{ background: 'linear-gradient(to right, var(--bg-soft), transparent)' }} />
+      <div className="absolute right-0 top-0 bottom-0 w-16 pointer-events-none" style={{ background: 'linear-gradient(to left, var(--bg-soft), transparent)' }} />
     </div>
   );
 };
 
+/* ─── Navbar ──────────────────────────────────── */
 export const Navbar = () => {
-  const [isSearchOpen, setIsSearchOpen] = React.useState(false);
+  const [isSearchOpen,     setIsSearchOpen]     = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [scrolled,         setScrolled]         = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const navLinks = [
+    { label: 'General',     href: '/general-news' },
+    { label: 'Tech',        href: '/tech' },
+    { label: 'Business',    href: '/business' },
+    { label: 'Finance',     href: '/finance' },
+    { label: 'Markets',     href: '/global-market' },
+    { label: 'Commodities', href: '/commodities' },
+  ];
 
   return (
     <>
-      <LiveMarketStrip />
-      <nav className="navbar sticky top-0 z-50 w-full px-6 md:px-12 py-3 flex items-center justify-between">
-    <Link to="/" className="flex items-center gap-3 no-underline text-inherit group">
-      <div className="w-10 h-10 rounded-[14px] flex items-center justify-center border transition-all duration-500 group-hover:rotate-[15deg] group-hover:scale-110" style={{ background: '#05070F', borderColor: 'var(--accent)' }}>
-        <PenTool style={{ width: '1.2rem', height: '1.2rem', color: 'var(--accent)' }} />
-      </div>
-      <span className="text-2xl font-[900] tracking-[-0.06em] transition-colors duration-500 uppercase" style={{ color: 'var(--text-primary)' }}>NewsForge</span>
-    </Link>
-    <div className="hidden lg:flex items-center gap-10 text-[18px] font-black uppercase tracking-tight transition-colors duration-500" style={{ color: 'var(--text-secondary)' }}>
-      <Link to="/tech" className="hover:text-[var(--accent)] transition-colors no-underline text-inherit">Tech</Link>
-      <Link to="/business" className="hover:text-[var(--accent)] transition-colors no-underline text-inherit">Business</Link>
-      <Link to="/finance" className="hover:text-[var(--accent)] transition-colors no-underline text-inherit">Finance</Link>
-      <Link to="/global-market" className="hover:text-[var(--accent)] transition-colors no-underline text-inherit">Markets</Link>
-      <Link to="/commodities" className="hover:text-[var(--accent)] transition-colors no-underline text-inherit">Commodities</Link>
-    </div>
-      <div className="flex items-center gap-4">
-        <ThemeToggle />
-        <button 
-          onClick={() => setIsSearchOpen(true)}
-          className="p-2.5 rounded-xl transition-colors border-none bg-transparent cursor-pointer"
-          style={{ color: 'var(--text-secondary)' }}
-        >
-          <Search style={{ width: '1.25rem', height: '1.25rem' }} />
-        </button>
-      </div>
-    </nav>
-    <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      <header
+        className="navbar sticky top-0 z-50 w-full"
+        style={{ boxShadow: scrolled ? 'var(--shadow-sm)' : 'none', transition: 'box-shadow 0.2s' }}
+      >
+        <div className="max-w-7xl mx-auto px-5 md:px-8 h-[60px] flex items-center justify-between gap-6">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2 shrink-0 no-underline group">
+            <div
+              className="w-7 h-7 rounded-md flex items-center justify-center"
+              style={{ background: 'var(--accent)' }}
+            >
+              <PenTool className="w-3.5 h-3.5 text-white" />
+            </div>
+            <span
+              className="text-lg font-bold tracking-tight"
+              style={{ color: 'var(--text-primary)', letterSpacing: '-0.03em' }}
+            >
+              NewsForge
+            </span>
+          </Link>
+
+          {/* Desktop Nav */}
+          <nav className="hidden lg:flex items-center gap-1">
+            {navLinks.map(link => (
+              <Link
+                key={link.href}
+                to={link.href}
+                className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors no-underline"
+                style={{ color: 'var(--text-secondary)' }}
+                onMouseEnter={e => e.target.style.color = 'var(--text-primary)'}
+                onMouseLeave={e => e.target.style.color = 'var(--text-secondary)'}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsSearchOpen(true)}
+              aria-label="Search"
+              className="p-2 rounded-md border border-[var(--border)] bg-transparent cursor-pointer transition-colors hover:bg-[var(--bg-soft)]"
+            >
+              <Search className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+            </button>
+            <ThemeToggle />
+            <button
+              className="lg:hidden p-2 rounded-md border border-[var(--border)] bg-transparent cursor-pointer transition-colors hover:bg-[var(--bg-soft)]"
+              onClick={() => setIsMobileMenuOpen(v => !v)}
+              aria-label="Menu"
+            >
+              {isMobileMenuOpen
+                ? <X    className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+                : <Menu className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+              }
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile Menu */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.18 }}
+            className="lg:hidden fixed top-[60px] left-0 right-0 z-40 border-b"
+            style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+          >
+            <nav className="max-w-7xl mx-auto px-5 py-4 flex flex-col gap-1">
+              {navLinks.map(link => (
+                <Link
+                  key={link.href}
+                  to={link.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="px-3 py-2.5 rounded-md text-sm font-medium no-underline transition-colors"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </>
   );
 };
 
-export const Footer = () => (
-  <footer className="mt-24 py-20 px-8 divider" style={{ background: 'var(--bg-main)' }}>
-    <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
-      <div className="md:col-span-1">
-        <div className="flex items-center gap-2 mb-6 text-2xl font-black">
-          <PenTool style={{ width: '1.75rem', height: '1.75rem', color: 'var(--accent)' }} />
-          <span>NewsForge</span>
-        </div>
-        <p className="text-sm font-medium leading-relaxed mb-8" style={{ color: 'var(--text-secondary)' }}>
-          Precision journalism for the modern architect of industry. Defining the intersection of global markets and emerging technology.
-        </p>
-        <div className="flex gap-6">
-          <Twitter className="w-5 h-5 cursor-pointer transition-colors hover:text-[var(--accent)]" style={{ color: 'var(--text-muted)' }} />
-          <Github className="w-5 h-5 cursor-pointer transition-colors hover:text-[var(--accent)]" style={{ color: 'var(--text-muted)' }} />
-          <Linkedin className="w-5 h-5 cursor-pointer transition-colors hover:text-[var(--accent)]" style={{ color: 'var(--text-muted)' }} />
-        </div>
-      </div>
-      
-      <div>
-        <h4 className="font-black text-xs uppercase tracking-[0.2em] mb-8" style={{ color: 'var(--text-muted)' }}>Navigation</h4>
-        <ul className="list-none p-0 space-y-4 text-sm font-bold">
-          <li><Link to="/" className="hover:text-[var(--accent)] no-underline transition-colors" style={{ color: 'var(--text-secondary)' }}>Global Home</Link></li>
-          <li><Link to="/tech" className="hover:text-[var(--accent)] no-underline transition-colors" style={{ color: 'var(--text-secondary)' }}>Technical Index</Link></li>
-          <li><Link to="/business" className="hover:text-[var(--accent)] no-underline transition-colors" style={{ color: 'var(--text-secondary)' }}>Business Intelligence</Link></li>
-          <li><Link to="/finance" className="hover:text-[var(--accent)] no-underline transition-colors" style={{ color: 'var(--text-secondary)' }}>Financial Hub</Link></li>
-        </ul>
-      </div>
-
-      <div>
-        <h4 className="font-black text-xs uppercase tracking-[0.2em] mb-8" style={{ color: 'var(--text-muted)' }}>Resources</h4>
-        <ul className="list-none p-0 space-y-4 text-sm font-bold">
-          <li><Link to="/about" className="hover:text-[var(--accent)] no-underline transition-colors" style={{ color: 'var(--text-secondary)' }}>Management</Link></li>
-          <li><Link to="/contact" className="hover:text-[var(--accent)] no-underline transition-colors" style={{ color: 'var(--text-secondary)' }}>Terminal Support</Link></li>
-          <li><Link to="/privacy" className="hover:text-[var(--accent)] no-underline transition-colors" style={{ color: 'var(--text-secondary)' }}>Privacy Protocol</Link></li>
-          <li><Link to="/admin/login" className="hover:text-[var(--accent)] no-underline transition-colors" style={{ color: 'var(--text-secondary)' }}>Admin Access</Link></li>
-        </ul>
-      </div>
-
-      <div className="card p-8">
-        <h4 className="font-black text-[10px] uppercase tracking-[0.2em] mb-4" style={{ color: 'var(--text-muted)' }}>Newsletter</h4>
-        <p className="text-[10px] mb-4 font-bold leading-relaxed uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Join 42k+ deep-tech readers.</p>
-        <div className="space-y-3">
-          <input type="email" placeholder="email@nexus.com" className="input w-full p-3 text-[10px] font-bold" />
-          <button className="btn-primary w-full py-3">Synchronize</button>
-        </div>
-      </div>
+/* ─── Layout wrapper ─────────────────────────── */
+export default function Layout({ children }) {
+  const notificationPromptRef = useRef();
+  return (
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
+      <Toaster position="top-right" toastOptions={{
+        style: { background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)', fontSize: '13px' }
+      }} />
+      <LiveMarketStrip />
+      <Navbar />
+      <main className="flex-1">{children}</main>
+      <Footer onSubscribeSuccess={() => notificationPromptRef.current?.trigger()} />
+      <React.Suspense fallback={null}>
+        <NotificationPrompt ref={notificationPromptRef} />
+        <CookieConsent />
+      </React.Suspense>
     </div>
-    <div className="text-center mt-24 text-[11px] font-black uppercase tracking-[0.4em]" style={{ color: 'var(--text-muted)' }}>
-      © 2026 NewsForge System Terminal. All Rights Reserved.
-    </div>
-  </footer>
-);
+  );
+}
 
-export const BlogCard = ({ title, category, author, date, readTime, image, link, description, excerpt, variant = "standard" }) => {
-  const displayAuthor = author || "NewsForge";
-  const authorInitial = "N"; // NewsForge Brand Constant
-  const summary = description || excerpt || "Strategic analysis of emerging market architectures and technical paradigms.";
+/* ─── Footer ──────────────────────────────────── */
+export const Footer = ({ onSubscribeSuccess }) => {
+  const [email,   setEmail]   = useState('');
+  const [status,  setStatus]  = useState('idle');
 
-  if (variant === "featured") {
-    return (
-      <motion.div whileHover={{ y: -8 }} className="relative group rounded-[32px] overflow-hidden aspect-[21/10] shadow-2xl" style={{ border: '1px solid var(--border)' }}>
-        <div className="absolute inset-0 z-10" style={{ background: 'linear-gradient(to top, rgba(5, 7, 15, 0.95), transparent)' }} />
-        <img src={image} className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt="" loading="lazy" />
-        <div className="absolute bottom-0 left-0 p-12 z-20 w-full text-left">
-          <div className="flex items-center gap-4 mb-4">
-             <span className="px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest label-tech shadow-xl" style={{ background: 'var(--bg-card)' }}>{category} Protocol</span>
-             <span className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 mono" style={{ color: 'var(--text-muted)' }}><Clock className="w-3.5 h-3.5" /> {readTime}M</span>
+  const handleSubscribe = async () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email.trim())) {
+      toast.error('Please enter a valid email address.');
+      return;
+    }
+    setStatus('loading');
+    try {
+      const res = await axios.post(`${API_BASE_URL}/articles/subscribe`, { email: email.trim() });
+      if (res.data.success) {
+        toast.success('You\'re subscribed!');
+        setEmail('');
+        setStatus('success');
+        setTimeout(() => onSubscribeSuccess?.(), 1500);
+      } else {
+        toast(res.data.message || 'Already subscribed.', { icon: 'ℹ️' });
+        setStatus('idle');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Subscription failed. Try again.');
+      setStatus('error');
+    }
+  };
+
+  const categories = [
+    { label: 'General News', href: '/general-news' },
+    { label: 'Technology',   href: '/tech' },
+    { label: 'Business',     href: '/business' },
+    { label: 'Finance',      href: '/finance' },
+    { label: 'Markets',      href: '/global-market' },
+    { label: 'Commodities',  href: '/commodities' },
+  ];
+
+  const company = [
+    { label: 'About Us',         href: '/about'   },
+    { label: 'Contact',          href: '/contact' },
+    { label: 'Privacy Policy',   href: '/privacy' },
+    { label: 'Terms & Conditions', href: '/terms' },
+  ];
+
+  return (
+    <footer className="mt-16 pt-14 pb-8 divider" style={{ background: 'var(--bg-elevated)' }}>
+      <div className="max-w-7xl mx-auto px-5 md:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 divider">
+
+          {/* Brand */}
+          <div>
+            <Link to="/" className="flex items-center gap-2 mb-4 no-underline">
+              <div className="w-7 h-7 rounded-md flex items-center justify-center" style={{ background: 'var(--accent)' }}>
+                <PenTool className="w-3.5 h-3.5 text-white" />
+              </div>
+              <span className="text-base font-bold" style={{ color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>NewsForge</span>
+            </Link>
+            <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--text-muted)' }}>
+              In-depth journalism for modern professionals. Covering tech, finance, and global markets daily.
+            </p>
+            <div className="flex items-center gap-4">
+              {[
+                { Icon: IconTwitter,  label: 'Twitter'  },
+                { Icon: IconGithub,   label: 'GitHub'   },
+                { Icon: IconLinkedin, label: 'LinkedIn' },
+              ].map(({ Icon, label }) => (
+                <a key={label} href="#" aria-label={label}
+                  className="transition-colors"
+                  style={{ color: 'var(--text-muted)' }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                >
+                  <Icon />
+                </a>
+              ))}
+            </div>
           </div>
-          <h2 className="text-4xl md:text-7xl font-black leading-none -tracking-tight transition-all group-hover:text-[var(--accent)] uppercase h-gradient">
-            <Link to={link} className="text-inherit no-underline">{title}</Link>
-          </h2>
+
+          {/* Categories */}
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-wider mb-5" style={{ color: 'var(--text-muted)' }}>Categories</h4>
+            <ul className="space-y-3">
+              {categories.map(c => (
+                <li key={c.href}>
+                  <Link to={c.href} className="text-sm transition-colors no-underline" style={{ color: 'var(--text-secondary)' }}
+                    onMouseEnter={e => e.target.style.color = 'var(--accent)'}
+                    onMouseLeave={e => e.target.style.color = 'var(--text-secondary)'}
+                  >{c.label}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Company */}
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-wider mb-5" style={{ color: 'var(--text-muted)' }}>Company</h4>
+            <ul className="space-y-3">
+              {company.map(c => (
+                <li key={c.href}>
+                  <Link to={c.href} className="text-sm transition-colors no-underline" style={{ color: 'var(--text-secondary)' }}
+                    onMouseEnter={e => e.target.style.color = 'var(--accent)'}
+                    onMouseLeave={e => e.target.style.color = 'var(--text-secondary)'}
+                  >{c.label}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Newsletter */}
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-wider mb-5" style={{ color: 'var(--text-muted)' }}>Newsletter</h4>
+            <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>
+              Join 42,000+ readers. High-quality news, no spam.
+            </p>
+            <div className="flex flex-col gap-2">
+              <input
+                type="email"
+                placeholder="Your email address"
+                className="input text-sm"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSubscribe()}
+              />
+              <button
+                onClick={handleSubscribe}
+                disabled={status === 'loading'}
+                className="btn-primary justify-center py-2.5 text-sm disabled:opacity-60"
+              >
+                {status === 'loading' ? 'Subscribing…' : 'Subscribe'}
+              </button>
+            </div>
+          </div>
         </div>
-      </motion.div>
+
+        <p className="text-center text-xs mt-8" style={{ color: 'var(--text-muted)' }}>
+          © {new Date().getFullYear()} NewsForge. All rights reserved.
+        </p>
+      </div>
+    </footer>
+  );
+};
+
+/* ─── BlogCard ────────────────────────────────── */
+export const BlogCard = ({
+  title, category, author, date, readTime,
+  image, link, description, excerpt, variant = 'standard'
+}) => {
+  const summary = description || excerpt || '';
+  const displayAuthor = author || 'NewsForge';
+
+  /* FEATURED — full-width hero overlay card */
+  if (variant === 'featured') {
+    return (
+      <div className="relative group rounded-xl overflow-hidden" style={{ aspectRatio: '21/9', minHeight: '320px', border: '1px solid var(--border)' }}>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
+        <img
+          src={image}
+          alt={title}
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          loading="lazy"
+        />
+        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 z-20">
+          <span className="section-label mb-3 inline-block text-white/80">{category}</span>
+          <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-white leading-tight mb-3 max-w-3xl" style={{ letterSpacing: '-0.03em' }}>
+            <Link to={link} className="no-underline text-inherit hover:opacity-90 transition-opacity">{title}</Link>
+          </h2>
+          <div className="flex items-center gap-3 text-sm text-white/60">
+            <span>{displayAuthor}</span>
+            <span>·</span>
+            <Clock className="w-3.5 h-3.5" />
+            <span>{readTime} min read</span>
+          </div>
+        </div>
+      </div>
     );
   }
 
-  if (variant === "trending") {
+  /* TRENDING — compact horizontal list item */
+  if (variant === 'trending') {
     return (
-      <Link to={link} className="flex items-center gap-6 p-4 rounded-3xl transition-all border border-transparent hover:border-white/5 hover:bg-white/[0.02] group no-underline text-inherit text-left">
-        <div className="w-24 h-24 rounded-2xl overflow-hidden shrink-0 border border-white/5">
-          <img src={image} className="w-full h-full object-cover grayscale-[40%] group-hover:grayscale-0 transition-all duration-700 group-hover:scale-110" alt="" />
+      <Link to={link} className="flex items-center gap-4 group no-underline py-3 border-b last:border-b-0" style={{ borderColor: 'var(--border)' }}>
+        <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0">
+          <img src={image} alt={title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
         </div>
-        <div className="flex flex-col gap-2">
-           <div className="flex items-center gap-3">
-              <span className="text-[9px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded bg-orange-600/10 text-orange-600 border border-orange-600/10">{category}</span>
-              <span className="text-[9px] font-bold uppercase tracking-widest text-[#64748B]">{readTime}M Read</span>
-           </div>
-           <h4 className="text-sm font-black leading-snug group-hover:text-orange-500 transition-colors line-clamp-2 uppercase tracking-wide">{title}</h4>
+        <div className="min-w-0 flex-1">
+          <span className="section-label text-[10px] block mb-1">{category}</span>
+          <h4 className="text-sm font-semibold leading-snug line-clamp-2 transition-colors" style={{ color: 'var(--text-primary)' }}
+            onMouseEnter={e => e.target.style.color = 'var(--accent)'}
+            onMouseLeave={e => e.target.style.color = 'var(--text-primary)'}
+          >{title}</h4>
+          <span className="text-xs mt-1 block" style={{ color: 'var(--text-muted)' }}>{readTime} min</span>
         </div>
       </Link>
     );
   }
 
-  if (variant === "list") {
+  /* LIST — very compact */
+  if (variant === 'list') {
     return (
-      <div className="flex items-center gap-5 p-4 transition-all rounded-2xl group cursor-pointer text-left hover:translate-x-2" style={{ border: '1px solid transparent', hover: {borderColor: 'var(--border)', background: 'var(--bg-soft)'} }}>
-        <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0" style={{ border: '1px solid var(--border)', background: 'var(--bg-soft)' }}>
-          <img src={image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-125" alt="" loading="lazy" />
+      <div className="flex items-center gap-3 group">
+        <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0">
+          <img src={image} alt={title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
         </div>
-        <div className="py-1">
-           <div className="text-[9px] font-black uppercase tracking-[0.3em] mb-2 mono" style={{ color: 'var(--accent)' }}>{category}</div>
-           <h4 className="text-base font-bold leading-tight group-hover:text-[var(--accent)] transition-colors line-clamp-2 uppercase tracking-tighter" style={{ color: 'var(--text-primary)' }}>
-             <Link to={link} className="text-inherit no-underline">{title}</Link>
-           </h4>
+        <div className="min-w-0">
+          <span className="section-label text-[10px] block mb-0.5">{category}</span>
+          <h4 className="text-sm font-semibold leading-snug line-clamp-2" style={{ color: 'var(--text-primary)' }}>
+            <Link to={link} className="no-underline hover:text-[var(--accent)] transition-colors">{title}</Link>
+          </h4>
         </div>
       </div>
     );
   }
 
+  /* STANDARD — default grid card */
   return (
-    <motion.div className="card h-full text-left flex flex-col group overflow-hidden border-white/5 bg-white/[0.02]">
-      <div className="aspect-[16/10] w-full overflow-hidden relative">
-        <img src={image} alt={title} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 grayscale-[30%] group-hover:grayscale-0" loading="lazy" />
-        <div className="absolute top-6 left-6 z-20 px-4 py-2 rounded-xl backdrop-blur-md shadow-lg" style={{ background: 'rgba(5, 7, 15, 0.7)', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-          <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: 'var(--accent)' }}>{category}</span>
-        </div>
+    <article className="card card-hover flex flex-col h-full group overflow-hidden">
+      {/* Image */}
+      <div className="aspect-[16/10] overflow-hidden shrink-0">
+        <img
+          src={image}
+          alt={title}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          loading="lazy"
+        />
       </div>
-      <div className="p-8 flex flex-col flex-1">
-        <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-widest mb-6 mono" style={{ color: 'var(--text-muted)' }}>
-          <span className="flex items-center gap-2"><Clock className="w-4 h-4" style={{ color: 'var(--accent)' }} /> {readTime} MINS</span>
-          <div className="w-1.5 h-1.5 rounded-full bg-[#334155]" />
-          <span>{date}</span>
-        </div>
-        <h3 className="text-2xl font-black leading-[1.25] mb-4 group-hover:text-[var(--accent)] transition-all tracking-[-0.04em] uppercase line-clamp-2" style={{ color: 'var(--text-primary)' }}>
-          <Link to={link} className="text-inherit no-underline">{title}</Link>
+
+      {/* Body */}
+      <div className="flex flex-col flex-1 p-5">
+        <span className="section-label mb-2 block">{category}</span>
+        <h3 className="text-lg font-bold leading-snug mb-2 line-clamp-2 transition-colors" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+          <Link to={link} className="no-underline hover:text-[var(--accent)] transition-colors">{title}</Link>
         </h3>
-        <p className="text-sm font-medium line-clamp-2 text-[#94A3B8] mb-10 leading-relaxed">
-          {summary}
-        </p>
-        <div className="flex items-center justify-between pt-8 mt-auto border-t border-white/5">
-          <div className="flex items-center gap-4">
-             <div className="w-11 h-11 rounded-2xl flex items-center justify-center font-black text-[12px] shadow-inner" style={{ background: 'var(--accent-soft)', color: 'var(--accent)', border: '1px solid var(--accent-soft)' }}>
-                {authorInitial}
-             </div>
-             <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)' }}>{displayAuthor}</span>
-                <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#64748B]">Senior Architect</span>
-             </div>
+        {summary && (
+          <p className="text-sm leading-relaxed line-clamp-2 flex-1 mb-4" style={{ color: 'var(--text-muted)' }}>{summary}</p>
+        )}
+
+        {/* Meta */}
+        <div className="flex items-center justify-between pt-4 mt-auto border-t text-xs" style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>
+              {displayAuthor[0]?.toUpperCase()}
+            </div>
+            <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>{displayAuthor}</span>
           </div>
-          <Link to={link} className="p-3 rounded-2xl bg-white/5 hover:bg-orange-600 hover:text-white transition-all">
-            <ArrowRight style={{ width: '1.25rem', height: '1.25rem' }} />
-          </Link>
+          <div className="flex items-center gap-1.5">
+            <Clock className="w-3 h-3" />
+            <span>{readTime} min</span>
+            {date && <><span>·</span><span>{date}</span></>}
+          </div>
         </div>
       </div>
-    </motion.div>
+    </article>
   );
 };

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useContent } from '../context/ContentContext';
-import { useNavigate } from 'react-router-dom';
-import { Lock, User, AlertCircle, ArrowRight, Eye, EyeOff, ShieldCheck, Zap } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Lock, User, AlertCircle, ArrowRight, Eye, EyeOff, PenTool } from 'lucide-react';
 
 const AdminLogin = () => {
   const [username, setUsername] = useState('');
@@ -23,79 +23,79 @@ const AdminLogin = () => {
       if (login(username, password)) {
         navigate('/admin/dashboard');
       } else {
-        setError('THE KEY PROVIDED IS INVALID FOR THIS TERMINAL.');
+        setError('The credentials provided are invalid.');
         setIsLoading(false);
       }
     }, 800);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 font-['Inter'] relative overflow-hidden transition-colors duration-500">
-      {/* Dynamic Background Elements */}
-      <div className="absolute -top-40 -left-40 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] shrink-0" />
-      <div className="absolute -bottom-40 -right-40 w-[600px] h-[600px] bg-slate-200/20 dark:bg-slate-800/10 rounded-full blur-[120px] shrink-0" />
+    <div className="min-h-screen flex items-center justify-center font-['Inter'] transition-colors duration-500" style={{ background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
       
-      <div className="max-w-md w-full relative z-10 px-8">
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="bg-white dark:bg-slate-900/50 backdrop-blur-3xl p-12 md:p-16 rounded-[4.5rem] border border-slate-100 dark:border-slate-800 shadow-2xl shadow-slate-200/20 dark:shadow-none"
-        >
-          <div className="text-center mb-16">
-            <div className="w-24 h-24 bg-gradient-to-tr from-[#f97316] to-[#fb923c] rounded-[2.5rem] flex items-center justify-center mx-auto mb-10 shadow-[0_20px_40px_rgba(249,115,22,0.3)] group transition-transform hover:rotate-[15deg]">
-              <ShieldCheck className="w-12 h-12 text-white" />
-            </div>
-            <h1 className="text-4xl font-black font-['Outfit'] text-slate-900 dark:text-white mb-2 uppercase tracking-tighter">NewsForge</h1>
-            <p className="text-[10px] text-slate-400 dark:text-slate-600 font-black uppercase tracking-[0.4em] mt-3">Structural Control Layer</p>
-          </div>
+      <div className="max-w-md w-full relative z-10 px-6">
+        <div className="text-center mb-10">
+           <Link to="/" className="inline-flex items-center justify-center w-12 h-12 bg-slate-900 dark:bg-white rounded-xl mb-6 shadow-md transition-transform hover:scale-105">
+             <PenTool className="w-6 h-6 text-white dark:text-slate-900" />
+           </Link>
+           <h1 className="text-3xl font-bold tracking-tight mb-2">NewsForge Admin</h1>
+           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Sign in to manage editorial content.</p>
+        </div>
 
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4 }}
+          className="p-8 sm:p-10 rounded-2xl shadow-xl"
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+        >
           <AnimatePresence mode="wait">
             {error && (
               <motion.div 
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="mb-10 p-6 bg-rose-500/10 border border-rose-500/20 rounded-3xl flex items-center gap-5 text-rose-500 text-[10px] font-black uppercase tracking-widest leading-relaxed"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
               >
-                <AlertCircle className="w-6 h-6 flex-shrink-0" />
-                {error}
+                <div className="mb-6 p-4 rounded-lg flex items-center gap-3 text-sm font-medium" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--red)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                  <AlertCircle className="w-5 h-5 shrink-0" />
+                  {error}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          <form onSubmit={handleLogin} className="space-y-10">
-            <div className="space-y-4 text-left">
-              <label className="text-[10px] uppercase tracking-[0.4em] text-slate-400 dark:text-slate-700 font-black px-6">Identity Nexus</label>
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div className="space-y-2 text-left">
+              <label className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Username</label>
               <div className="relative">
-                <User className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 dark:text-slate-700" />
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 opacity-40" />
                 <input 
                   type="text" 
-                  placeholder="USERNAME"
+                  placeholder="Enter username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-3xl p-6 pl-16 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:border-primary focus:ring-8 focus:ring-primary/5 outline-none transition-all placeholder:text-slate-200 dark:placeholder:text-slate-800 font-black text-[11px] uppercase tracking-widest"
+                  className="w-full input pl-12 py-3 text-sm transition-all focus:ring-2"
                   required
                 />
               </div>
             </div>
 
-            <div className="space-y-4 text-left">
-              <label className="text-[10px] uppercase tracking-[0.4em] text-slate-400 dark:text-slate-700 font-black px-6">Terminal key</label>
+            <div className="space-y-2 text-left">
+              <label className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Password</label>
               <div className="relative">
-                <Lock className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 dark:text-slate-700" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 opacity-40" />
                 <input 
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-3xl p-6 pl-16 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:border-primary focus:ring-8 focus:ring-primary/5 outline-none transition-all placeholder:text-slate-200 dark:placeholder:text-slate-800 font-black text-[11px] uppercase tracking-widest"
+                  className="w-full input pl-12 py-3 text-sm transition-all focus:ring-2"
                   required
                 />
                 <button 
                   type="button" 
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 hover:text-primary transition-colors border-none bg-transparent cursor-pointer p-2"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 transition-colors border-none bg-transparent cursor-pointer opacity-40 hover:opacity-100"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -105,22 +105,19 @@ const AdminLogin = () => {
             <button 
                type="submit" 
                disabled={isLoading}
-               className="primary-btn w-full py-7 text-[12px] uppercase tracking-[0.4em] font-black flex items-center justify-center gap-4 active:scale-95 shadow-2xl shadow-orange-500/30 grow-btn"
+               className="btn-primary w-full py-3 mt-4 text-sm justify-center rounded-lg shadow-md transition-transform hover:scale-[1.02] active:scale-95 flex items-center gap-2"
             >
               {isLoading ? (
-                <div className="w-6 h-6 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
               ) : (
-                <>Synchronize Terminal <ArrowRight className="w-5 h-5" /></>
+                <>Sign In <ArrowRight className="w-4 h-4" /></>
               )}
             </button>
           </form>
         </motion.div>
         
-        <div className="flex flex-col items-center gap-6 mt-16 mt-20 opacity-30">
-           <Zap className="w-5 h-5 text-primary fill-primary" />
-           <p className="text-center text-[10px] text-slate-400 font-black uppercase tracking-[0.5em]">
-              Authorized Infrastructure Access Only / RSA-4096
-           </p>
+        <div className="mt-8 text-center text-xs" style={{ color: 'var(--text-muted)' }}>
+           &copy; {new Date().getFullYear()} NewsForge Editorial Console.
         </div>
       </div>
     </div>
