@@ -21,6 +21,7 @@ class GroqService {
           messages: [{ role: 'user', content: prompt }],
           model: modelName,
           temperature: 0.7,
+          response_format: { type: 'json_object' }
         });
         
         const rawText = chatCompletion.choices[0]?.message?.content?.trim();

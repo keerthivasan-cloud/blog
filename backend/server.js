@@ -704,11 +704,13 @@ REQUIRED STRUCTURE (You MUST include ALL of these formatting elements):
 6. Highlights: You MUST wrap the 3 most important insights in double asterisks like this: **This is a critical insight**. (Make sure the bold text is an entire sentence, 20-100 characters long).
 7. Conclusion: A robust final takeaway.
 
-YOUR WRITING STYLE:
-- Target length: Exactly ${wordTarget} words. Write long, expansive paragraphs.
-- Tone: Professional, authoritative, yet engaging (like a high-end Substack or Harvard Business Review article).
-- Expand on every single point. Do not just list things; explain the "why" and "how".
-- NO generic intros or outflows like "In conclusion" or "Let's delve in".
+YOUR WRITING STYLE & CONTENT RULES:
+- Focus: Be hyper-specific and laser-focused on the EXACT topic. Do not drift into generic or tangential subjects.
+- Precision: Provide concrete examples, realistic scenarios, and direct technical or business facts. Avoid fluff, filler words, or repetitive boilerplate.
+- Target length: Exactly ${wordTarget} words. Write substantive, value-dense paragraphs rather than padding word count with generalizations.
+- Tone: Professional, authoritative, actionable, yet engaging (like a high-end Substack or Harvard Business Review article).
+- Expand on every single point intelligently. Explain the "why" and "how" with precise logic.
+- NO generic intros or outflows like "In conclusion", "As we can see", or "Let's delve in". Give hard substance immediately.
 - Write strictly in Markdown.
 
 IMAGE PROMPT RULES:
@@ -723,10 +725,11 @@ Example — for topic "AI replacing jobs":
 
 OUTPUT FORMAT — STRICT:
 Return ONLY a valid JSON object. No markdown. No backticks. No explanation. Nothing before or after the JSON.
+CRITICAL JSON RULE: You MUST escape all newlines as \\n inside the string values. DO NOT output raw line breaks inside the "content" string.
 
 {
   "title": "Your engaging, topic-specific title",
-  "content": "Full markdown article. Use ## for H2 headings, ### for H3, **bold** for key terms, - for bullet lists. No YAML frontmatter inside content.",
+  "content": "Full markdown article. You MUST use \\n\\n to separate all headings, paragraphs, and list blocks. Example: ## Heading\\n\\nParagraph text... Use ## for H2 headings, ### for H3, **bold** for key terms, - for bullet lists. No YAML frontmatter inside content.",
   "image_prompt": "Your detailed, topic-specific image generation prompt"
 }`;
 
@@ -743,25 +746,9 @@ Return ONLY a valid JSON object. No markdown. No backticks. No explanation. Noth
     const dateShort = date.split("T")[0];
     const slug = title.toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");
 
-    // Expanded curated Unsplash base images (varied visual styles)
-    const curatedBases = [
-      "1451187580459-43490279c0fa",
-      "1518770660439-4636190af475",
-      "1550751827-4bd374c3f58b",
-      "1639734311735-3c910a7620a7",
-      "1611974710112-6e9fa1e7960a",
-      "1526303328154-4bac89c0250b",
-      "1677442135703-1787eea5ce01",
-      "1620712943543-bcc4688e7485",
-      "1581090464777-f3220bbe1b8b",
-      "1633356122544-f134324a6cee",
-      "1504711434969-e33886168f5c",
-      "1573496359142-b8d87734a5a2",
-      "1485827404703-89b55fcc595e",
-      "1569025690938-a00729c9e1f9"
-    ];
-    const randomBase = curatedBases[Math.floor(Math.random() * curatedBases.length)];
-    const dynamicImage = `https://images.unsplash.com/photo-${randomBase}?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3`;
+    // Dynamically generate an image using the exact topic/image prompt
+    const imageQuery = image_prompt || topicClean;
+    const dynamicImage = `https://image.pollinations.ai/prompt/${encodeURIComponent(imageQuery)}?width=1200&height=800&nologo=true`;
 
     // Compose full markdown with YAML frontmatter for storage
     const safeTitle = title.replace(/"/g, "'");

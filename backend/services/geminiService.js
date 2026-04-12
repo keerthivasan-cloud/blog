@@ -3,7 +3,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 class GeminiService {
   constructor() {
     this.apiKey = process.env.GEMINI_API_KEY;
-    this.models = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
+    this.models = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash", "gemini-flash-latest", "gemini-pro-latest"];
   }
 
   async generate(prompt) {
@@ -17,7 +17,10 @@ class GeminiService {
     for (const modelName of this.models) {
       try {
         console.log(`[Gemini] Attempting generation with model: ${modelName}`);
-        const model = genAI.getGenerativeModel({ model: modelName });
+        const model = genAI.getGenerativeModel({ 
+          model: modelName,
+          generationConfig: { responseMimeType: "application/json" }
+        });
         const result = await model.generateContent(prompt);
         const rawText = result.response.text().trim();
         return rawText;

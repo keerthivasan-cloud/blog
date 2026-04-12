@@ -17,6 +17,9 @@ function parseMarkdownToBlocks(markdownStr) {
   // Remove Title/H1 which is usually handled entirely by the article meta schema
   cleanMarkdown = cleanMarkdown.replace(/^#\s+.+$/m, '').trim();
 
+  // Ensure headings have a blank line after them to prevent them from merging with paragraphs
+  cleanMarkdown = cleanMarkdown.replace(/^(#{1,6}\s+.+)\n(?!\s*\n)/gm, '$1\n\n');
+
   // Split by double newlines to extract blocks
   const rawBlocks = cleanMarkdown.split(/\n\s*\n/);
   const structuredBlocks = [];
