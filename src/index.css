@@ -107,7 +107,8 @@ h1, h2, h3, h4, h5, h6 {
 .divider { border-bottom: 1px solid var(--border); }
 
 .section-label {
-  font-size: 11px;
+  font-size: 10px;
+  @media (min-width: 360px) { font-size: 11px; }
   font-weight: 700;
   letter-spacing: 0.10em;
   text-transform: uppercase;
@@ -213,7 +214,8 @@ h1, h2, h3, h4, h5, h6 {
 /* For AI-generated markdown content in articles */
 .prose-article {
   font-family: Georgia, 'Times New Roman', Times, serif;
-  font-size: 18px;
+  font-size: 16px;
+  @media (min-width: 768px) { font-size: 18px; }
   line-height: 1.8;
   color: var(--text-secondary);
 }
@@ -221,7 +223,8 @@ h1, h2, h3, h4, h5, h6 {
 .prose-article > * + * { margin-top: 1.5em; }
 
 .prose-article p {
-  font-size: 18px;
+  font-size: 16px;
+  @media (min-width: 768px) { font-size: 18px; }
   line-height: 1.8;
   margin-bottom: 1.5rem;
 }
@@ -238,7 +241,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .prose-article h2 {
-  font-size: 26px;
+  font-size: 22px;
+  @media (min-width: 768px) { font-size: 26px; }
   font-weight: 700;
   margin-top: 3rem;
   margin-bottom: 1rem;
@@ -246,7 +250,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .prose-article h3 {
-  font-size: 21px;
+  font-size: 19px;
+  @media (min-width: 768px) { font-size: 21px; }
   font-weight: 700;
   margin-top: 2.5rem;
   margin-bottom: 0.75rem;
@@ -271,13 +276,15 @@ h1, h2, h3, h4, h5, h6 {
 
 .prose-article li {
   margin-bottom: 0.5rem;
-  font-size: 18px;
+  font-size: 16px;
+  @media (min-width: 768px) { font-size: 18px; }
   line-height: 1.7;
 }
 
 .prose-article blockquote {
   margin: 2.5rem 0;
-  padding: 1.5rem 2rem;
+  padding: 1rem 1.25rem;
+  @media (min-width: 768px) { padding: 1.5rem 2rem; }
   border-left: 3px solid var(--accent);
   background: var(--bg-soft);
   border-radius: 0 6px 6px 0;
@@ -285,7 +292,8 @@ h1, h2, h3, h4, h5, h6 {
 
 .prose-article blockquote p {
   font-family: 'Inter', sans-serif;
-  font-size: 20px;
+  font-size: 18px;
+  @media (min-width: 768px) { font-size: 20px; }
   font-style: italic;
   font-weight: 600;
   color: var(--text-primary);

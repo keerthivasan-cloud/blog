@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import DOMPurify from 'dompurify';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
@@ -115,7 +116,7 @@ const ArticleDetail = () => {
               className="hover:text-[var(--accent)] transition-colors no-underline"
             >{article.category}</Link>
             <span>/</span>
-            <span className="truncate max-w-[200px]">{article.title}</span>
+            <span className="truncate max-w-[120px] sm:max-w-[200px]">{article.title}</span>
           </nav>
 
           {/* ── Article header ────────────────── */}
@@ -302,7 +303,7 @@ const ArticleDetail = () => {
                     {Array.isArray(article.content) && article.content.length > 0
                       ? <BlockRenderer blocks={article.content} />
                       : article.markdownContent
-                        ? <div dangerouslySetInnerHTML={{ __html: renderMarkdown(article.markdownContent) }} />
+                        ? <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdown(article.markdownContent)) }} />
                         : <p style={{ color: 'var(--text-muted)' }}>No content available.</p>
                     }
                   </motion.div>

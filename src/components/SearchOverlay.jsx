@@ -145,7 +145,7 @@ const SearchOverlay = ({ isOpen, onClose }) => {
                   <X className="w-4 h-4 text-slate-400" />
                 </button>
               )}
-              <div className="absolute right-10 top-1/2 -translate-y-1/2 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 opacity-60">
+              <div className="absolute right-10 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 opacity-60">
                  <Command className="w-3 h-3" />
                  <span className="text-[9px] font-bold">K</span>
               </div>
@@ -162,9 +162,9 @@ const SearchOverlay = ({ isOpen, onClose }) => {
                         key={item.id} 
                         onClick={() => handleSelect(item.category, item.slug)}
                         onMouseEnter={() => setActiveIndex(idx)}
-                        className={`w-full text-left p-5 rounded-2xl transition-all flex items-center justify-between group cursor-pointer border-none ${activeIndex === idx ? 'bg-slate-50 dark:bg-white/5' : 'bg-transparent'}`}
+                        className={`w-full text-left p-4 sm:p-5 rounded-2xl transition-all flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 group cursor-pointer border-none ${activeIndex === idx ? 'bg-slate-50 dark:bg-white/5' : 'bg-transparent'}`}
                       >
-                         <div className="flex items-center gap-5">
+                         <div className="flex items-center gap-4 sm:gap-5">
                             <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${activeIndex === idx ? 'bg-[#E84C1E] text-white' : 'bg-slate-50 dark:bg-white/5 text-[#E84C1E]'}`}>
                                <Zap className="w-5 h-5 fill-current" />
                             </div>
@@ -176,7 +176,7 @@ const SearchOverlay = ({ isOpen, onClose }) => {
                                <h4 className="text-sm font-bold dark:text-white line-clamp-1">{item.title}</h4>
                             </div>
                          </div>
-                         <div className="flex items-center gap-3">
+                         <div className="flex items-center gap-3 ml-auto sm:ml-0">
                             <span className="text-[10px] font-medium text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">{item.readTime} MIN</span>
                             <ArrowRight className={`w-4 h-4 transition-all ${activeIndex === idx ? 'opacity-100 translate-x-1 text-[#E84C1E]' : 'opacity-0 text-slate-400'}`} />
                          </div>
@@ -197,7 +197,7 @@ const SearchOverlay = ({ isOpen, onClose }) => {
                        </div>
                        <div className="flex flex-wrap gap-2">
                           {recentSearches.map((tag) => (
-                             <button key={tag} onClick={() => setQuery(tag)} className="px-5 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 text-[10px] font-bold uppercase tracking-widest hover:bg-[#E84C1E] hover:text-white transition-all border-none cursor-pointer">{tag}</button>
+                             <button key={tag} onClick={() => setQuery(tag)} className="px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 text-[10px] font-bold uppercase tracking-widest hover:bg-[#E84C1E] hover:text-white transition-all border-none cursor-pointer">{tag}</button>
                           ))}
                        </div>
                     </div>
@@ -208,8 +208,8 @@ const SearchOverlay = ({ isOpen, onClose }) => {
                        <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500">Trending Intelligence</p>
                        <div className="flex flex-wrap gap-2">
                           {trendingTags.map((tag) => (
-                             <button key={tag.name} onClick={() => setQuery(tag.name)} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 text-[10px] font-bold uppercase tracking-widest hover:border-[#E84C1E]/30 transition-all border border-transparent cursor-pointer">
-                                <span className="text-[#E84C1E]">#</span> {tag.name}
+                             <button key={tag.name} onClick={() => setQuery(tag.name)} className="flex items-center gap-2 px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 text-[10px] font-bold uppercase tracking-widest hover:border-[#E84C1E]/30 transition-all border border-transparent cursor-pointer">
+                                <span className="text-[#E84C1E] text-xs">#</span> {tag.name}
                              </button>
                           ))}
                        </div>

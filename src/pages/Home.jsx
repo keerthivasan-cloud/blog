@@ -23,7 +23,7 @@ const SkeletonCard = () => (
 );
 
 const SkeletonFeatured = () => (
-  <div className="rounded-xl overflow-hidden animate-pulse" style={{ aspectRatio: '21/9', background: 'var(--bg-soft)' }} />
+  <div className="rounded-xl overflow-hidden animate-pulse aspect-[16/9] md:aspect-[21/9]" style={{ background: 'var(--bg-soft)' }} />
 );
 
 /* ─── Category tabs ─────────────────────────── */
@@ -163,7 +163,7 @@ const Home = () => {
                 <button
                   key={cat}
                   onClick={() => { setActiveCategory(cat); setActiveTag(null); }}
-                  className="shrink-0 px-4 py-3.5 text-sm font-medium transition-colors border-b-2 cursor-pointer bg-transparent"
+                  className="shrink-0 px-3 py-3 text-xs sm:px-4 sm:py-3.5 sm:text-sm font-medium transition-colors border-b-2 cursor-pointer bg-transparent"
                   style={{
                     color:       active ? 'var(--accent)'   : 'var(--text-muted)',
                     borderColor: active ? 'var(--accent)'   : 'transparent',
@@ -241,7 +241,7 @@ const Home = () => {
 
       {/* ── TRENDING TOPICS + NEWSLETTER ──────── */}
       <section className="max-w-7xl mx-auto px-5 md:px-8 py-14">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12">
 
           {/* Trending topics */}
           {trendingTags.length > 0 && (

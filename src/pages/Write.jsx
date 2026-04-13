@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
+import DOMPurify from 'dompurify';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Zap, Sparkles, ArrowLeft, CheckCircle, Loader2, Save,
@@ -110,7 +111,7 @@ const TagInput = ({ tags, onChange }) => {
         onChange={e => setInput(e.target.value)}
         onKeyDown={add}
         placeholder={tags.length ? 'Add tag…' : 'Type tag and press Enter'}
-        className="bg-transparent border-none outline-none text-sm flex-1 min-w-[120px]"
+        className="bg-transparent border-none outline-none text-sm flex-1 min-w-[80px] sm:min-w-[120px]"
         style={{ color: 'var(--text-primary)' }}
       />
     </div>
@@ -492,7 +493,7 @@ const Write = () => {
                     </div>
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Featured Image</label>
-                      <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <input
                           value={manual.image}
                           onChange={e => setManual(p => ({ ...p, image: e.target.value }))}
@@ -734,9 +735,9 @@ Final thoughts...`}
                               <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Preview</span>
                             </div>
                             <div
-                              className="p-6 prose-article max-h-[500px] overflow-y-auto"
+                              className="p-6 prose-article max-h-[300px] sm:max-h-[500px] overflow-y-auto"
                               style={{ background: 'var(--bg-card)' }}
-                              dangerouslySetInnerHTML={{ __html: renderMarkdownPreview(`# ${md.title}\n\n${md.content}`) }}
+                              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdownPreview(`# ${md.title}\n\n${md.content}`)) }}
                             />
                           </motion.div>
                         )}
@@ -766,7 +767,7 @@ Final thoughts...`}
                         </div>
                         <div>
                           <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Featured Image</label>
-                          <div className="flex gap-2">
+                          <div className="flex flex-col sm:flex-row gap-2">
                             <input value={md.image} onChange={e => setMd(p => ({ ...p, image: e.target.value }))} className="input flex-1 text-sm" placeholder="Image URL…" />
                             <label className="cursor-pointer flex items-center justify-center w-10 h-10 rounded-lg border" style={{ borderColor: 'var(--border)' }}>
                               {isUploading ? <Loader2 className="w-4 h-4 animate-spin" style={{ color: 'var(--text-muted)' }} /> : <LucideImage className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />}
@@ -810,7 +811,7 @@ Final thoughts...`}
                           value={md.content}
                           onChange={e => setMd(p => ({ ...p, content: e.target.value }))}
                           className="input resize-y font-mono text-sm leading-relaxed"
-                          style={{ minHeight: '320px', fontFamily: 'monospace' }}
+                          style={{ minHeight: '200px', mdMinHeight: '320px', fontFamily: 'monospace' }}
                           placeholder="Article content in Markdown…"
                         />
                       </div>

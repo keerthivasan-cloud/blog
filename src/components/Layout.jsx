@@ -53,10 +53,10 @@ const LiveMarketStrip = () => {
 
   return (
     <div
-      className="py-1.5 px-4 overflow-hidden relative flex items-center"
+      className="py-1 sm:py-2 px-4 overflow-hidden relative flex items-center"
       style={{ background: 'var(--bg-soft)', borderBottom: '1px solid var(--border)' }}
     >
-      <div className="flex items-center gap-8 animate-marquee whitespace-nowrap text-[11px] font-medium">
+      <div className="flex items-center gap-8 animate-marquee whitespace-nowrap text-[10px] sm:text-[11px] font-medium">
         {[...marketData, ...marketData].map((item, idx) => (
           <span key={idx} className="flex items-center gap-2">
             <span style={{ color: 'var(--text-muted)' }}>{item.name}</span>
@@ -258,7 +258,7 @@ export const Footer = ({ onSubscribeSuccess }) => {
   return (
     <footer className="mt-16 pt-14 pb-8 divider" style={{ background: 'var(--bg-elevated)' }}>
       <div className="max-w-7xl mx-auto px-5 md:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 divider">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 lg:gap-10 pb-12 divider">
 
           {/* Brand */}
           <div>
@@ -364,7 +364,7 @@ export const BlogCard = ({
   /* FEATURED — full-width hero overlay card */
   if (variant === 'featured') {
     return (
-      <div className="relative group rounded-xl overflow-hidden" style={{ aspectRatio: '21/9', minHeight: '320px', border: '1px solid var(--border)' }}>
+      <div className="relative group rounded-xl overflow-hidden aspect-[16/9] md:aspect-[21/9] min-h-[220px] md:min-h-[320px]" style={{ border: '1px solid var(--border)' }}>
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
         <img
           src={image}
@@ -372,9 +372,9 @@ export const BlogCard = ({
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           loading="lazy"
         />
-        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 z-20">
+        <div className="absolute bottom-0 left-0 right-0 p-5 md:p-10 z-20">
           <span className="section-label mb-3 inline-block text-white/80">{category}</span>
-          <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-white leading-tight mb-3 max-w-3xl" style={{ letterSpacing: '-0.03em' }}>
+          <h2 className="text-xl md:text-4xl lg:text-5xl font-bold text-white leading-tight mb-3 max-w-3xl" style={{ letterSpacing: '-0.03em' }}>
             <Link to={link} className="no-underline text-inherit hover:opacity-90 transition-opacity">{title}</Link>
           </h2>
           <div className="flex items-center gap-3 text-sm text-white/60">

@@ -70,65 +70,61 @@ const Blogs = () => {
             <table className="w-full text-left border-collapse text-sm">
                <thead>
                  <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 text-slate-500 dark:text-slate-400 font-medium tracking-wide text-xs uppercase">
-                   <th className="px-6 py-4">Title</th>
-                   <th className="px-6 py-4">Status</th>
-                   <th className="px-6 py-4 hidden md:table-cell">Category</th>
-                   <th className="px-6 py-4 hidden sm:table-cell">Published</th>
-                   <th className="px-6 py-4 text-right">Actions</th>
-                 </tr>
-               </thead>
-               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
-                 {filteredArticles.length === 0 ? (
-                   <tr>
-                     <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
-                       <span className="block mb-2">No blogs found.</span>
-                       <button onClick={() => {setSearchTerm(''); setStatusFilter('All');}} className="text-primary hover:underline font-medium">Clear filters</button>
-                     </td>
-                   </tr>
-                 ) : (
-                   filteredArticles.map(article => (
-                     <tr key={article._id || article.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors group">
-                       <td className="px-6 py-4">
-                         <Link to={`/admin/editor/${article.slug}`} className="font-semibold text-slate-900 dark:text-white hover:text-primary transition-colors line-clamp-1 block max-w-sm">
-                           {article.title}
-                         </Link>
-                       </td>
-                       <td className="px-6 py-4">
-                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border
-                           ${(article.status || 'published') === 'published' 
-                             ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20' 
-                             : 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-500/10 dark:text-yellow-400 dark:border-yellow-500/20'}`
-                         }>
-                           {(article.status || 'published') === 'published' ? <CheckCircle size={12} /> : <Clock size={12} />}
-                           <span className="capitalize">{article.status || 'published'}</span>
-                         </span>
-                       </td>
-                       <td className="px-6 py-4 text-slate-500 dark:text-slate-400 hidden md:table-cell capitalize">
-                          {article.category || 'Uncategorized'}
-                       </td>
-                       <td className="px-6 py-4 text-slate-500 dark:text-slate-400 hidden sm:table-cell">
-                          {new Date(article.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                       </td>
-                       <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                             <Link 
-                               to={`/admin/editor/${article.slug}`}
-                               className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
-                             >
-                                <Edit2 size={16} />
-                             </Link>
-                             <button
-                               onClick={() => setConfirmDelete({ open: true, id: article._id || article.id })}
-                               className="p-2 rounded-md hover:bg-red-50 dark:hover:bg-red-500/10 text-slate-400 hover:text-red-500 transition-colors"
-                             >
-                                <Trash2 size={16} />
-                             </button>
-                          </div>
-                          {/* Fallback for touch devices where hover isn't possible */}
-                          <div className="lg:hidden flex items-center justify-end gap-2 text-slate-400">
-                             ...
-                          </div>
-                       </td>
+                    <th className="px-3 sm:px-4 md:px-6 py-4">Title</th>
+                    <th className="px-3 sm:px-4 md:px-6 py-4">Status</th>
+                    <th className="px-3 sm:px-4 md:px-6 py-4 hidden md:table-cell">Category</th>
+                    <th className="px-3 sm:px-4 md:px-6 py-4 hidden sm:table-cell">Published</th>
+                    <th className="px-3 sm:px-4 md:px-6 py-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                  {filteredArticles.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="px-3 sm:px-4 md:px-6 py-12 text-center text-slate-500">
+                        <span className="block mb-2">No blogs found.</span>
+                        <button onClick={() => {setSearchTerm(''); setStatusFilter('All');}} className="text-primary hover:underline font-medium">Clear filters</button>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredArticles.map(article => (
+                      <tr key={article._id || article.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors group">
+                        <td className="px-3 sm:px-4 md:px-6 py-4">
+                          <Link to={`/admin/editor/${article.slug}`} className="font-semibold text-slate-900 dark:text-white hover:text-primary transition-colors line-clamp-1 block max-w-sm">
+                            {article.title}
+                          </Link>
+                        </td>
+                        <td className="px-3 sm:px-4 md:px-6 py-4">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border
+                            ${(article.status || 'published') === 'published' 
+                              ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20' 
+                              : 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-500/10 dark:text-yellow-400 dark:border-yellow-500/20'}`
+                          }>
+                            {(article.status || 'published') === 'published' ? <CheckCircle size={12} /> : <Clock size={12} />}
+                            <span className="capitalize">{article.status || 'published'}</span>
+                          </span>
+                        </td>
+                        <td className="px-3 sm:px-4 md:px-6 py-4 text-slate-500 dark:text-slate-400 hidden md:table-cell capitalize">
+                           {article.category || 'Uncategorized'}
+                        </td>
+                        <td className="px-3 sm:px-4 md:px-6 py-4 text-slate-500 dark:text-slate-400 hidden sm:table-cell">
+                           {new Date(article.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </td>
+                        <td className="px-3 sm:px-4 md:px-6 py-4 text-right">
+                           <div className="flex items-center justify-end gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                              <Link 
+                                to={`/admin/editor/${article.slug}`}
+                                className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                              >
+                                 <Edit2 size={16} />
+                              </Link>
+                              <button
+                                onClick={() => setConfirmDelete({ open: true, id: article._id || article.id })}
+                                className="p-2 rounded-md hover:bg-red-50 dark:hover:bg-red-500/10 text-slate-400 hover:text-red-500 transition-colors"
+                              >
+                                 <Trash2 size={16} />
+                              </button>
+                           </div>
+                        </td>
                      </tr>
                    ))
                  )}

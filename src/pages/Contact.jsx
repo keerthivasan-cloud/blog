@@ -15,8 +15,8 @@ const Contact = () => {
   return (
     <div className="min-h-screen transition-colors duration-500" style={{ background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
       <Navbar />
-      <main className="max-w-7xl mx-auto px-8 pt-40 pb-60">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-20">
+      <main className="max-w-7xl mx-auto px-5 md:px-8 pt-40 pb-60">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 md:gap-20">
           
           <motion.div
              initial={{ opacity: 0, x: -30 }}
@@ -58,7 +58,7 @@ const Contact = () => {
              transition={{ duration: 0.8 }}
              className="lg:col-span-7"
           >
-            <div className="p-8 md:p-12 rounded-3xl border shadow-sm" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
+            <div className="p-5 md:p-12 rounded-3xl border shadow-sm" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
                <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                      <div className="space-y-2">

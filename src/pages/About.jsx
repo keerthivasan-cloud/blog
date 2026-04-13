@@ -8,7 +8,7 @@ const About = () => {
   return (
     <div className="min-h-screen transition-colors duration-500" style={{ background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
       <Navbar />
-      <main className="max-w-5xl mx-auto px-8 pt-40 pb-60">
+      <main className="max-w-5xl mx-auto px-5 md:px-8 pt-40 pb-60">
         <motion.div
            initial={{ opacity: 0, y: 30 }}
            animate={{ opacity: 1, y: 0 }}
@@ -23,22 +23,22 @@ const About = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
-            <div className="p-8 card flex flex-col items-start transition-all hover:scale-[1.02] duration-300">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mb-24">
+            <div className="p-5 md:p-8 card flex flex-col items-start transition-all hover:scale-[1.02] duration-300">
               <div className="w-12 h-12 rounded-lg border flex items-center justify-center mb-6" style={{ background: 'var(--bg-soft)', borderColor: 'var(--border)' }}>
                 <Target className="w-5 h-5" style={{ color: 'var(--accent)' }} />
               </div>
               <h3 className="text-xl font-bold mb-3">Precision</h3>
               <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>To deliver high-scale technical insights to the architects of modern industry.</p>
             </div>
-            <div className="p-8 card flex flex-col items-start transition-all hover:scale-[1.02] duration-300">
+            <div className="p-5 md:p-8 card flex flex-col items-start transition-all hover:scale-[1.02] duration-300">
               <div className="w-12 h-12 rounded-lg border flex items-center justify-center mb-6" style={{ background: 'var(--bg-soft)', borderColor: 'var(--border)' }}>
                 <Users className="w-5 h-5" style={{ color: 'var(--accent)' }} />
               </div>
               <h3 className="text-xl font-bold mb-3">Insights</h3>
               <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>A specialized team of analysts decoding the future of global markets.</p>
             </div>
-            <div className="p-8 card flex flex-col items-start transition-all hover:scale-[1.02] duration-300">
+            <div className="p-5 md:p-8 card flex flex-col items-start transition-all hover:scale-[1.02] duration-300">
               <div className="w-12 h-12 rounded-lg border flex items-center justify-center mb-6" style={{ background: 'var(--bg-soft)', borderColor: 'var(--border)' }}>
                 <Shield className="w-5 h-5" style={{ color: 'var(--accent)' }} />
               </div>

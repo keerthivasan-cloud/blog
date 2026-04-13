@@ -3,6 +3,8 @@ const { createClient } = require("@supabase/supabase-js");
 const { Resend } = require("resend");
 const rateLimit = require("express-rate-limit");
 const cors = require("cors");
+const helmet = require("helmet");
+const hpp = require("hpp");
 require("dotenv").config();
 
 const multer = require("multer");
@@ -41,6 +43,20 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma'],
   credentials: true
 }));
+
+app.use(helmet());
+app.use(hpp());
+
+// Global Rate Limiter
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: { message: "Too many requests from this IP, please try again after 15 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use("/api", globalLimiter);
+
 app.use(express.json());
 
 
@@ -52,6 +68,11 @@ const upload = multer({ storage });
 const adminAuth = (req, res, next) => {
   const authHeader = req.headers.authorization;
   const adminSecret = process.env.ADMIN_PASSWORD || 'admin123';
+  
+  if (adminSecret === 'admin123' && process.env.NODE_ENV === 'production') {
+    console.warn("CRITICAL SECURITY WARNING: Using default ADMIN_PASSWORD ('admin123') in production!");
+  }
+  
   if (!authHeader || authHeader !== `Bearer ${adminSecret}`) {
     return res.status(403).json({ message: "Network Integrity: Invalid Terminal Key." });
   }
