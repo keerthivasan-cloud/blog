@@ -96,7 +96,7 @@ const getSettings = () => {
   if (fs.existsSync(settingsPath)) {
     return JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
   }
-  return { siteName: 'NewsForge', themeColor: '#000000', adsenseScript: '', logoUrl: '' };
+  return { siteName: 'NewsForge', themeColor: '#000000', adsenseScript: '', adsensePublisherId: '', logoUrl: '' };
 };
 
 app.get(["/api/settings", "/api/settings/"], (req, res) => {
@@ -116,7 +116,7 @@ articleRouter.get("/trending", async (req, res) => {
   try {
     const { data: posts, error } = await supabase
       .from('articles')
-      .select('*')
+      .select('id, title, slug, category, excerpt, image, author, readTime, createdAt, tags')
       .eq('status', 'published')
       .order('createdAt', { ascending: false })
       .limit(6);
@@ -146,7 +146,7 @@ articleRouter.get("/", async (req, res) => {
     
     let query = supabase
       .from('articles')
-      .select('*', { count: 'exact' })
+      .select('id, title, slug, category, excerpt, image, author, readTime, createdAt, tags', { count: 'exact' })
       .eq('status', 'published')
       .order('createdAt', { ascending: false });
     
@@ -335,7 +335,7 @@ articleRouter.delete("/:id", adminAuth, async (req, res) => {
 // --- MANUAL ARTICLE SYNTHESIS ---
 articleRouter.post("/", adminAuth, async (req, res) => {
   try {
-    const { title, category, author, readTime, image, excerpt, content, slug: customSlug } = req.body;
+    const { title, category, author, readTime, image, excerpt, content, slug: customSlug, status, tags, seo } = req.body;
     
     if (!title || !content) {
       return res.status(400).json({ message: "Intelligence Node Incomplete: Title and Content required." });
@@ -373,7 +373,9 @@ articleRouter.post("/", adminAuth, async (req, res) => {
       excerpt: excerpt || '',
       image: image || '',
       author: author || 'NewsForge',
-      status: 'published',
+      status: status || 'published',
+      tags: Array.isArray(tags) ? tags : [],
+      seo: seo || null,
       readTime: readTime || 5,
       createdAt: date
     }]);

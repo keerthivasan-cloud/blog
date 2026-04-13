@@ -5,6 +5,8 @@ import axios from 'axios';
 import { Navbar, Footer, BlogCard } from '../components/Layout';
 import API_BASE_URL from '../config';
 import { updateSEOMetadata } from '../utils/seo';
+import { useContent } from '../context/ContentContext';
+import AdPlacement from '../components/AdPlacement';
 
 /* ─── Skeleton card ─────────────────────────── */
 const SkeletonCard = () => (
@@ -35,11 +37,13 @@ const formatDate = (d) =>
 
 /* ─── Home ──────────────────────────────────── */
 const Home = () => {
-  const [articles,      setArticles]      = useState([]);
+  const { articles: cachedArticles } = useContent();
+  const [articles,      setArticles]      = useState(cachedArticles || []);
   const [trendingTags,  setTrendingTags]  = useState([]);
   const [activeCategory,setActiveCategory]= useState('All');
   const [activeTag,     setActiveTag]     = useState(null);
-  const [loading,       setLoading]       = useState(true);
+  // If we already have cached articles, skip the skeleton; start loading=false
+  const [loading,       setLoading]       = useState(cachedArticles.length === 0);
   const [loadingMore,   setLoadingMore]   = useState(false);
   const [page,          setPage]          = useState(1);
   const [hasMore,       setHasMore]       = useState(true);
@@ -140,6 +144,8 @@ const Home = () => {
           </div>
         )}
       </section>
+
+      <AdPlacement slotId="home-main-banner" />
 
       {/* ── DIVIDER ───────────────────────────── */}
       <div className="divider" />

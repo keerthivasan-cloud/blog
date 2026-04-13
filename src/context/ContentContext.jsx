@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
-import { initialArticles } from '../data/mockArticles';
 import { fetchMarketData } from '../services/marketData';
 
 import { API_BASE_URL, ADMIN_SECRET } from '../config';
@@ -9,15 +8,52 @@ const ContentContext = createContext();
 
 export const useContent = () => useContext(ContentContext);
 
+const CACHE_KEY = 'nf_articles_v1';
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+const getCachedArticles = () => {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const { articles, ts } = JSON.parse(raw);
+    if (Date.now() - ts > CACHE_TTL) { sessionStorage.removeItem(CACHE_KEY); return null; }
+    return articles;
+  } catch { return null; }
+};
+
+const setCachedArticles = (articles) => {
+  try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ articles, ts: Date.now() })); } catch {}
+};
+
 export const ContentProvider = ({ children }) => {
-  const [articles, setArticles] = useState([]);
+  const [articles, setArticles] = useState(() => getCachedArticles() || []);
   const [user, setUser] = useState(null);
   const [darkMode, setDarkMode] = useState(false);
   const [marketData, setMarketData] = useState([]);
+  const [settings, setSettings] = useState({
+    siteName: 'NewsForge',
+    themeColor: '#000000',
+    adsenseScript: '',
+    adsensePublisherId: '',
+    logoUrl: ''
+  });
+
+  // Fetch initial settings
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/settings`);
+        if (res.data) setSettings(res.data);
+      } catch (err) {
+        console.error("Settings Synchronization Failure", err);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   // Initialize theme from localStorage or system preference
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') || 'dark'; // Default dark
+    const savedTheme = localStorage.getItem('theme') || 'dark';
     const isDark = savedTheme === 'dark';
     setDarkMode(isDark);
     document.documentElement.setAttribute('data-theme', savedTheme);
@@ -34,7 +70,6 @@ export const ContentProvider = ({ children }) => {
     setDarkMode(newVal);
     document.documentElement.setAttribute('data-theme', themeStr);
     localStorage.setItem('theme', themeStr);
-    
     if (newVal) {
       document.documentElement.classList.add('dark');
     } else {
@@ -42,7 +77,7 @@ export const ContentProvider = ({ children }) => {
     }
   };
 
-  // Market Data Polling Engine (5s)
+  // Market data — 30s polling
   useEffect(() => {
     const updateMarket = async () => {
       const data = await fetchMarketData(import.meta.env.VITE_TWELVEDATA_API_KEY);
@@ -50,41 +85,45 @@ export const ContentProvider = ({ children }) => {
     };
 
     updateMarket();
-    const interval = setInterval(updateMarket, 30000); // 30s for free-tier compatibility
+    const interval = setInterval(updateMarket, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch articles from backend & poll every 60s for live updates
+  // Articles: stale-while-revalidate
+  // - Seed state from sessionStorage immediately (zero-latency first paint)
+  // - Then fetch fresh data in background; update cache + state on success
+  // - No polling — pages manage their own paginated fetches
   useEffect(() => {
+    const savedUser = localStorage.getItem('newsforge_user');
+    if (savedUser) setUser(JSON.parse(savedUser));
+
+    // Only background-fetch if cache was empty on mount
+    if (getCachedArticles()) return;
+
     const fetchArticles = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/articles`);
-        setArticles(res.data.articles || []);
+        const res = await axios.get(`${API_BASE_URL}/articles?page=1&limit=9`);
+        const fetched = res.data.articles || [];
+        setArticles(fetched);
+        setCachedArticles(fetched);
       } catch (error) {
         console.error("Backend Synchronization Failure", error);
       }
     };
 
     fetchArticles();
-    const interval = setInterval(fetchArticles, 60000); // live refresh every 60s
-
-    const savedUser = localStorage.getItem('newsforge_user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-
-    return () => clearInterval(interval);
   }, []);
 
   const refreshArticles = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/articles`);
-      setArticles(res.data.articles || []);
+      const res = await axios.get(`${API_BASE_URL}/articles?page=1&limit=9`);
+      const fetched = res.data.articles || [];
+      setArticles(fetched);
+      setCachedArticles(fetched);
     } catch (error) {
       console.error("Manual Refresh Failure", error);
     }
   };
-
 
   const deleteArticle = async (id) => {
     try {
@@ -92,7 +131,7 @@ export const ContentProvider = ({ children }) => {
         headers: { Authorization: `Bearer ${ADMIN_SECRET}` }
       });
       setArticles(prev => prev.filter(a => (a.id || a._id) !== id));
-      toast.success("Intelligence node purged from archive");
+      sessionStorage.removeItem(CACHE_KEY);
     } catch (error) {
       console.error("Archive Purge Failure", error);
     }
@@ -114,8 +153,8 @@ export const ContentProvider = ({ children }) => {
   };
 
   return (
-    <ContentContext.Provider value={{ 
-      articles, 
+    <ContentContext.Provider value={{
+      articles,
       user,
       login,
       logout,
@@ -123,7 +162,12 @@ export const ContentProvider = ({ children }) => {
       refreshArticles,
       darkMode,
       toggleTheme,
-      marketData
+      marketData,
+      settings,
+      refreshSettings: async () => {
+        const res = await axios.get(`${API_BASE_URL}/settings`);
+        if (res.data) setSettings(res.data);
+      }
     }}>
       {children}
     </ContentContext.Provider>

@@ -102,19 +102,32 @@ const Settings = () => {
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white">Monetization & AdSense Integration</h2>
              </div>
              
-             <div className="space-y-3">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">AdSense Publisher Script</label>
-                <div className="p-3 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 text-xs rounded-lg mb-2">
-                  Paste the <code>&lt;script&gt;</code> block from Google AdSense here. It will be dynamically injected into the head of your public pages. Ad slots inside articles will be lazy-loaded automatically if this script is active.
-                </div>
-                <textarea 
-                  value={formData.adsenseScript}
-                  onChange={e => setFormData({...formData, adsenseScript: e.target.value})}
-                  rows={6}
-                  placeholder="<script async src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js'></script>"
-                  className="w-full p-4 bg-slate-900 text-green-400 font-mono text-xs rounded-lg border-none outline-none focus:ring-2 focus:ring-green-500/50 resize-none"
-                />
-             </div>
+              <div className="space-y-4">
+                 <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Google AdSense Publisher ID</label>
+                    <input 
+                      type="text" 
+                      value={formData.adsensePublisherId || ''}
+                      placeholder="ca-pub-XXXXXXXXXXXXXXXX"
+                      onChange={e => setFormData({...formData, adsensePublisherId: e.target.value})}
+                      className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border-none rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 text-slate-900 dark:text-white"
+                    />
+                 </div>
+
+                 <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">AdSense Script (Master)</label>
+                    <div className="p-3 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 text-xs rounded-lg mb-2">
+                      Paste the <code>&lt;script&gt;</code> block from Google AdSense here. It will be dynamically injected into the head of your public pages.
+                    </div>
+                    <textarea 
+                      value={formData.adsenseScript}
+                      onChange={e => setFormData({...formData, adsenseScript: e.target.value})}
+                      rows={6}
+                      placeholder="<script async src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js'></script>"
+                      className="w-full p-4 bg-slate-900 text-green-400 font-mono text-xs rounded-lg border-none outline-none focus:ring-2 focus:ring-green-500/50 resize-none"
+                    />
+                 </div>
+              </div>
           </div>
 
           <div className="flex justify-end">
