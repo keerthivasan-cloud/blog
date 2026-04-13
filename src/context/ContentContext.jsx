@@ -102,7 +102,7 @@ export const ContentProvider = ({ children }) => {
 
     const fetchArticles = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/articles?page=1&limit=9`);
+        const res = await axios.get(`${API_BASE_URL}/articles?page=1&limit=6`);
         const fetched = res.data.articles || [];
         setArticles(fetched);
         setCachedArticles(fetched);
@@ -116,7 +116,7 @@ export const ContentProvider = ({ children }) => {
 
   const refreshArticles = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/articles?page=1&limit=9`);
+      const res = await axios.get(`${API_BASE_URL}/articles?page=1&limit=6`);
       const fetched = res.data.articles || [];
       setArticles(fetched);
       setCachedArticles(fetched);

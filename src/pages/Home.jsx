@@ -10,20 +10,34 @@ import AdPlacement from '../components/AdPlacement';
 
 /* ─── Skeleton card ─────────────────────────── */
 const SkeletonCard = () => (
-  <div className="card overflow-hidden animate-pulse">
+  <div className="card overflow-hidden animate-pulse" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
     <div className="aspect-[16/10] w-full" style={{ background: 'var(--bg-soft)' }} />
-    <div className="p-5 space-y-3">
-      <div className="h-3 w-16 rounded" style={{ background: 'var(--bg-soft)' }} />
+    <div className="p-5 space-y-4">
+      <div className="flex justify-between">
+        <div className="h-3 w-16 rounded" style={{ background: 'var(--bg-soft)' }} />
+        <div className="h-3 w-12 rounded" style={{ background: 'var(--bg-soft)' }} />
+      </div>
       <div className="h-5 w-full rounded" style={{ background: 'var(--bg-soft)' }} />
-      <div className="h-5 w-3/4 rounded" style={{ background: 'var(--bg-soft)' }} />
-      <div className="h-3 w-full rounded" style={{ background: 'var(--bg-soft)' }} />
-      <div className="h-3 w-2/3 rounded" style={{ background: 'var(--bg-soft)' }} />
+      <div className="h-4 w-3/4 rounded" style={{ background: 'var(--bg-soft)' }} />
+      <div className="pt-4 border-t" style={{ borderColor: 'var(--border-soft)' }}>
+        <div className="flex justify-between">
+          <div className="h-5 w-20 rounded" style={{ background: 'var(--bg-soft)' }} />
+          <div className="h-5 w-12 rounded" style={{ background: 'var(--bg-soft)' }} />
+        </div>
+      </div>
     </div>
   </div>
 );
 
 const SkeletonFeatured = () => (
-  <div className="rounded-xl overflow-hidden animate-pulse aspect-[16/9] md:aspect-[21/9]" style={{ background: 'var(--bg-soft)' }} />
+  <div className="rounded-xl overflow-hidden animate-pulse flex flex-col md:aspect-[21/9]" style={{ border: '1px solid var(--border)' }}>
+    <div className="aspect-[16/10] md:aspect-auto md:flex-1" style={{ background: 'var(--bg-soft)' }} />
+    <div className="p-5 md:p-10 space-y-3">
+      <div className="h-3 w-20 rounded" style={{ background: 'var(--bg-soft)' }} />
+      <div className="h-8 md:h-12 w-full rounded" style={{ background: 'var(--bg-soft)' }} />
+      <div className="h-5 w-1/3 rounded" style={{ background: 'var(--bg-soft)' }} />
+    </div>
+  </div>
 );
 
 /* ─── Category tabs ─────────────────────────── */
@@ -64,7 +78,7 @@ const Home = () => {
 
   const fetchArticles = async (pageNum, isInitial = false) => {
     if (!isInitial) setLoadingMore(true);
-    const params = new URLSearchParams({ page: pageNum, limit: 9 });
+    const params = new URLSearchParams({ page: pageNum, limit: 6 });
     if (activeCategory !== 'All') params.append('category', activeCategory);
     if (activeTag)                params.append('tag', activeTag);
     try {
@@ -101,7 +115,7 @@ const Home = () => {
       <Navbar />
 
       {/* ── HERO ──────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-5 md:px-8 pt-10 pb-12">
+      <section className="max-w-7xl mx-auto px-5 md:px-8 pt-6 md:pt-10 pb-8 md:pb-12">
 
         {/* Featured article */}
         {loading ? <SkeletonFeatured /> : featured && (
@@ -120,8 +134,12 @@ const Home = () => {
         )}
 
         {/* Secondary row — 3 articles below the hero */}
-        {!loading && secondaryRow.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mt-6">
+            {[1, 2, 3].map(i => <SkeletonCard key={i} />)}
+          </div>
+        ) : secondaryRow.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mt-6">
             {secondaryRow.map((item, idx) => (
               <motion.div
                 key={item.slug}
@@ -156,18 +174,17 @@ const Home = () => {
         style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
       >
         <div className="max-w-7xl mx-auto px-5 md:px-8">
-          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-3">
             {CATEGORIES.map(cat => {
               const active = activeCategory === cat;
               return (
                 <button
                   key={cat}
                   onClick={() => { setActiveCategory(cat); setActiveTag(null); }}
-                  className="shrink-0 px-3 py-3 text-xs sm:px-4 sm:py-3.5 sm:text-sm font-medium transition-colors border-b-2 cursor-pointer bg-transparent"
+                  className="shrink-0 px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer border-none"
                   style={{
-                    color:       active ? 'var(--accent)'   : 'var(--text-muted)',
-                    borderColor: active ? 'var(--accent)'   : 'transparent',
-                    fontWeight:  active ? 700               : 500,
+                    background: active ? 'var(--accent)'   : 'transparent',
+                    color:      active ? '#FFFFFF'         : 'var(--text-muted)',
                   }}
                 >
                   {cat}
@@ -195,7 +212,7 @@ const Home = () => {
         </div>
 
         {/* Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {loading
             ? [1, 2, 3, 4, 5, 6].map(i => <SkeletonCard key={i} />)
             : (activeCategory === 'All' ? gridArticles : articles).map((item, idx) => (

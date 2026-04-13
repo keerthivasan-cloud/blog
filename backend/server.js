@@ -8,6 +8,7 @@ const hpp = require("hpp");
 require("dotenv").config();
 
 const multer = require("multer");
+const sharp = require("sharp");
 
 // --- UTILS & CONSTANTS ---
 const curatedBases = [
@@ -135,6 +136,7 @@ app.put("/api/settings", adminAuth, (req, res) => {
 // I. SPECIFIC ACTIONS
 articleRouter.get("/trending", async (req, res) => {
   try {
+    res.setHeader('Cache-Control', 'public, max-age=300');
     const { data: posts, error } = await supabase
       .from('articles')
       .select('id, title, slug, category, excerpt, image, author, readTime, createdAt, tags')
@@ -159,6 +161,7 @@ articleRouter.post("/:id/react", (req, res) => {
 // II. BULK OPERATIONS
 articleRouter.get("/", async (req, res) => {
   try {
+    res.setHeader('Cache-Control', 'public, max-age=300');
     const { category, tag, limit = 9, page = 1 } = req.query;
     const pageSize = parseInt(limit);
     const pageNum = parseInt(page);
@@ -840,14 +843,20 @@ app.post("/api/upload", adminAuth, upload.single("image"), async (req, res) => {
   if (!req.file) return res.status(400).json({ message: "No file uploaded" });
   
   try {
-     const safeName = req.file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '');
-     const fileName = `${Date.now()}-${safeName}`;
+     const safeName = req.file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '').split('.')[0];
+     const fileName = `${Date.now()}-${safeName}.webp`;
      
-     // 1. Upload to Storage
+     // 1. Process and Compress Image
+     const compressedBuffer = await sharp(req.file.buffer)
+       .webp({ quality: 80, effort: 6 })
+       .resize({ width: 1200, withoutEnlargement: true }) // Prevent extremely large dimensions
+       .toBuffer();
+
+     // 2. Upload to Storage
      const { data: storageData, error: storageError } = await supabase.storage
        .from('images')
-       .upload(fileName, req.file.buffer, {
-          contentType: req.file.mimetype
+       .upload(fileName, compressedBuffer, {
+          contentType: 'image/webp'
        });
        
      if (storageError) throw storageError;

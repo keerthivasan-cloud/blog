@@ -364,21 +364,29 @@ export const BlogCard = ({
   /* FEATURED — full-width hero overlay card */
   if (variant === 'featured') {
     return (
-      <div className="relative group rounded-xl overflow-hidden aspect-[16/9] md:aspect-[21/9] min-h-[220px] md:min-h-[320px]" style={{ border: '1px solid var(--border)' }}>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
-        <img
-          src={image}
-          alt={title}
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-          loading="lazy"
-        />
-        <div className="absolute bottom-0 left-0 right-0 p-5 md:p-10 z-20">
-          <span className="section-label mb-3 inline-block text-white/80">{category}</span>
-          <h2 className="text-xl md:text-4xl lg:text-5xl font-bold text-white leading-tight mb-3 max-w-3xl" style={{ letterSpacing: '-0.03em' }}>
-            <Link to={link} className="no-underline text-inherit hover:opacity-90 transition-opacity">{title}</Link>
+      <div className="relative group rounded-xl overflow-hidden md:aspect-[21/9] flex flex-col md:block" style={{ border: '1px solid var(--border)', background: 'var(--bg-card)' }}>
+        {/* Mobile: Top Image | Desktop: Absolute Overlay */}
+        <div className="relative aspect-[16/10] md:absolute md:inset-0 md:aspect-auto overflow-hidden">
+          <div className="hidden md:block absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
+          <img
+            src={image}
+            alt={title}
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+
+        {/* Content */}
+        <div className="relative p-5 md:absolute md:bottom-0 md:left-0 md:right-0 md:p-10 z-20">
+          <span className="section-label mb-2 md:mb-3 inline-block md:text-white/80">{category}</span>
+          <h2 className="text-xl md:text-4xl lg:text-5xl font-bold text-[var(--text-primary)] md:text-white leading-tight mb-3 max-w-3xl" style={{ letterSpacing: '-0.03em' }}>
+            <Link to={link} className="no-underline text-inherit hover:opacity-90 transition-opacity line-clamp-2 md:line-clamp-none">
+              {title}
+            </Link>
           </h2>
-          <div className="flex items-center gap-3 text-sm text-white/60">
-            <span>{displayAuthor}</span>
+          <div className="flex items-center gap-3 text-sm text-[var(--text-muted)] md:text-white/60">
+            <span className="font-medium">{displayAuthor}</span>
             <span>·</span>
             <Clock className="w-3.5 h-3.5" />
             <span>{readTime} min read</span>
@@ -393,7 +401,7 @@ export const BlogCard = ({
     return (
       <Link to={link} className="flex items-center gap-4 group no-underline py-3 border-b last:border-b-0" style={{ borderColor: 'var(--border)' }}>
         <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0">
-          <img src={image} alt={title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
+          <img src={image} alt={title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" decoding="async" />
         </div>
         <div className="min-w-0 flex-1">
           <span className="section-label text-[10px] block mb-1">{category}</span>
@@ -412,7 +420,7 @@ export const BlogCard = ({
     return (
       <div className="flex items-center gap-3 group">
         <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0">
-          <img src={image} alt={title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
+          <img src={image} alt={title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" decoding="async" />
         </div>
         <div className="min-w-0">
           <span className="section-label text-[10px] block mb-0.5">{category}</span>
@@ -426,39 +434,46 @@ export const BlogCard = ({
 
   /* STANDARD — default grid card */
   return (
-    <article className="card card-hover flex flex-col h-full group overflow-hidden">
+    <article className="card card-hover flex flex-col h-full group overflow-hidden" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
       {/* Image */}
-      <div className="aspect-[16/10] overflow-hidden shrink-0">
+      <div className="aspect-[16/10] overflow-hidden shrink-0 border-b" style={{ borderColor: 'var(--border-soft)' }}>
         <img
           src={image}
           alt={title}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           loading="lazy"
+          decoding="async"
         />
       </div>
 
       {/* Body */}
-      <div className="flex flex-col flex-1 p-5">
-        <span className="section-label mb-2 block">{category}</span>
-        <h3 className="text-lg font-bold leading-snug mb-2 line-clamp-2 transition-colors" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+      <div className="flex flex-col flex-1 p-5 md:p-6">
+        <div className="flex items-center justify-between mb-3">
+          <span className="section-label">{category}</span>
+          {date && <span className="text-[11px] font-medium" style={{ color: 'var(--text-muted)' }}>{date}</span>}
+        </div>
+        
+        <h3 className="text-base md:text-lg font-bold leading-snug mb-2 line-clamp-2 transition-colors" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
           <Link to={link} className="no-underline hover:text-[var(--accent)] transition-colors">{title}</Link>
         </h3>
+        
         {summary && (
-          <p className="text-sm leading-relaxed line-clamp-2 flex-1 mb-4" style={{ color: 'var(--text-muted)' }}>{summary}</p>
+          <p className="text-[13px] md:text-sm leading-relaxed line-clamp-2 flex-1 mb-5" style={{ color: 'var(--text-secondary)' }}>
+            {summary}
+          </p>
         )}
 
         {/* Meta */}
-        <div className="flex items-center justify-between pt-4 mt-auto border-t text-xs" style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
+        <div className="flex items-center justify-between pt-4 mt-auto border-t text-[11px] md:text-xs" style={{ borderColor: 'var(--border-soft)', color: 'var(--text-muted)' }}>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>
+            <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] md:text-[11px] font-bold" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>
               {displayAuthor[0]?.toUpperCase()}
             </div>
-            <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>{displayAuthor}</span>
+            <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>{displayAuthor}</span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 font-medium">
             <Clock className="w-3 h-3" />
             <span>{readTime} min</span>
-            {date && <><span>·</span><span>{date}</span></>}
           </div>
         </div>
       </div>
