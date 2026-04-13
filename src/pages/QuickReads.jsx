@@ -1,23 +1,52 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Navbar, Footer } from '../components/Layout';
-import { Zap, Clock, ArrowRight, BookOpen, ChevronDown } from 'lucide-react';
+import { Zap, Clock, ArrowRight, BookOpen } from 'lucide-react';
 import API_BASE_URL from '../config';
+import { updateSEOMetadata } from '../utils/seo';
 
+const formatDate = (d) =>
+  new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+/* ── Skeleton ──────────────────────────────── */
+const QuickReadsSkeleton = () => (
+  <div className="min-h-screen" style={{ background: 'var(--bg-main)' }}>
+    <Navbar />
+    <div className="max-w-3xl mx-auto px-5 md:px-8 py-16 space-y-8">
+      {[1, 2, 3].map(i => (
+        <div key={i} className="card rounded-xl p-8 animate-pulse space-y-4">
+          <div className="h-3 w-24 rounded" style={{ background: 'var(--bg-soft)' }} />
+          <div className="h-7 w-3/4 rounded" style={{ background: 'var(--bg-soft)' }} />
+          <div className="h-4 w-full rounded" style={{ background: 'var(--bg-soft)' }} />
+          <div className="h-4 w-5/6 rounded" style={{ background: 'var(--bg-soft)' }} />
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+/* ── Page ──────────────────────────────────── */
 const QuickReads = () => {
   const [articles, setArticles] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading]   = useState(true);
+
+  useEffect(() => {
+    updateSEOMetadata({
+      title: 'Quick Reads — NewsForge',
+      description: 'Short-form news briefs for professionals on the move.',
+    });
+  }, []);
 
   useEffect(() => {
     const fetchArticles = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/articles`);
-        // Sort by newest first
-        setArticles(res.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+        const res = await axios.get(`${API_BASE_URL}/articles?limit=20&page=1`);
+        const data = res.data.articles || [];
+        setArticles(data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
       } catch (err) {
-        console.error("Quick Reads fetch failure:", err);
+        console.error('Quick Reads fetch failure:', err);
       } finally {
         setLoading(false);
       }
@@ -28,94 +57,94 @@ const QuickReads = () => {
   if (loading) return <QuickReadsSkeleton />;
 
   return (
-    <div className="min-h-screen transition-colors duration-500 selection:bg-orange-500/30 relative overflow-hidden" style={{ background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
-      <div className="mesh-gradient opacity-10" />
+    <div style={{ background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
       <Navbar />
-      
-      <main className="max-w-4xl mx-auto px-6 py-12">
-        <header className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md border text-[8px] font-bold uppercase tracking-[0.3em] mb-4" style={{ background: 'var(--accent-soft)', borderColor: 'var(--accent-soft)' }}>
-            <Zap className="w-3 h-3 fill-current" style={{ color: 'var(--accent)' }} /> Intelligence Stream v4.0
+
+      <section className="max-w-3xl mx-auto px-5 md:px-8 pt-14 pb-6">
+        <div className="flex items-center gap-2 mb-2">
+          <BookOpen className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+          <p className="section-label">Quick Reads</p>
+        </div>
+        <h1 className="text-3xl md:text-4xl font-bold mb-3" style={{ letterSpacing: '-0.03em' }}>
+          Short-form Briefings
+        </h1>
+        <p className="text-base" style={{ color: 'var(--text-muted)' }}>
+          Key stories distilled to their essentials — read in under 3 minutes.
+        </p>
+      </section>
+
+      <div className="divider" />
+
+      <main className="max-w-3xl mx-auto px-5 md:px-8 py-10 space-y-6">
+        {articles.length === 0 ? (
+          <div className="text-center py-24" style={{ color: 'var(--text-muted)' }}>
+            <BookOpen className="w-10 h-10 mx-auto mb-4 opacity-30" />
+            <p className="text-sm font-medium">No articles yet.</p>
           </div>
-          <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none mb-3 title">
-            Quick Reads
-          </h1>
-          <p className="font-bold uppercase text-[9px] tracking-[0.2em] subtitle">
-            High-velocity intelligence for the modern architect.
-          </p>
-        </header>
+        ) : articles.map((article, idx) => (
+          <motion.article
+            key={article.id || article._id || idx}
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: (idx % 5) * 0.05, duration: 0.4 }}
+            className="card card-hover rounded-xl p-7 group"
+          >
+            {/* Meta row */}
+            <div className="flex items-center gap-3 mb-4">
+              <span
+                className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded"
+                style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
+              >
+                {article.category}
+              </span>
+              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                {formatDate(article.createdAt)}
+              </span>
+              <span className="flex items-center gap-1 text-xs ml-auto" style={{ color: 'var(--text-muted)' }}>
+                <Clock className="w-3 h-3" /> {article.readTime || 3} min
+              </span>
+            </div>
 
-        <div className="space-y-12">
-          {articles.map((article, idx) => (
-            <motion.div 
-              key={article._id}
-              initial={{ opacity: 0, y: 15 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="card rounded-2xl p-8 md:p-10 group relative overflow-hidden"
+            {/* Title */}
+            <h2
+              className="text-xl md:text-2xl font-bold leading-snug mb-3 group-hover:text-[var(--accent)] transition-colors"
+              style={{ letterSpacing: '-0.02em' }}
             >
-              <div className="absolute top-0 left-0 w-1 h-full opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: 'var(--accent)' }} />
-              
-              <div className="flex items-center justify-between mb-6">
-                 <div className="flex p-1 rounded-md border shadow-sm" style={{ background: 'var(--bg-soft)', borderColor: 'var(--border)' }}>
-                    <span className="px-3 py-1 rounded-sm text-[8px] font-bold uppercase tracking-widest shadow-sm" style={{ background: 'var(--bg-main)', color: 'var(--accent)' }}>{article.category}</span>
-                    <span className="px-3 py-1 text-[8px] font-bold uppercase tracking-widest subtitle">{new Date(article.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-                 </div>
-                 <div className="text-[9px] font-bold uppercase tracking-[0.3em] opacity-30 tabular-nums">DATA_NODE_0{idx + 1}</div>
-              </div>
+              {article.title}
+            </h2>
 
-              <h2 className="text-2xl md:text-3xl font-black text-foreground uppercase leading-tight mb-6 group-hover:translate-x-1 transition-transform h-gradient">
-                {article.title}
-              </h2>
+            {/* Excerpt / bullets */}
+            {article.excerpt ? (
+              <p className="text-sm leading-relaxed mb-5" style={{ color: 'var(--text-secondary)' }}>
+                {article.excerpt}
+              </p>
+            ) : article.bullets?.length > 0 ? (
+              <ul className="space-y-2 mb-5">
+                {article.bullets.slice(0, 3).map((bullet, bIdx) => (
+                  <li key={bIdx} className="flex gap-2 items-start text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    <Zap className="w-3 h-3 shrink-0 mt-0.5" style={{ color: 'var(--accent)' }} />
+                    {bullet}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
 
-              <div className="space-y-4 mb-10">
-                {article.bullets?.length > 0 ? (
-                  article.bullets.slice(0, 3).map((bullet, bIdx) => (
-                    <div key={bIdx} className="flex gap-3 items-start">
-                       <Zap className="w-3 h-3 text-primary shrink-0 mt-1" />
-                       <p className="text-sm font-bold font-lora text-muted-foreground leading-snug italic uppercase tracking-tight">{bullet}</p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-slate-400 uppercase italic">Summary node not initialized.</p>
-                )}
-              </div>
-
-               <div className="flex items-center justify-between pt-6 border-t" style={{ borderColor: 'var(--border)' }}>
-                  <div className="flex items-center gap-2 text-[8px] font-bold uppercase tracking-widest mono subtitle">
-                     <Clock className="w-3 h-3" /> DATA_CAP_0{article.readTime || 5}M
-                  </div>
-                  <Link 
-                    to={`/${article.category.toLowerCase().replace(/\s+/g, '-')}/${article.slug}`}
-                    className="flex items-center gap-3 text-[9px] font-bold uppercase tracking-[0.2em] hover:gap-4 transition-all no-underline group/link"
-                    style={{ color: 'var(--accent)' }}
-                  >
-                    Integrate <div className="w-7 h-7 rounded-lg flex items-center justify-center group-hover/link:bg-[var(--accent)] group-hover/link:text-white transition-all shadow-lg" style={{ background: 'var(--accent-soft)' }}><ArrowRight className="w-3 h-3" /></div>
-                  </Link>
-               </div>
-            </motion.div>
-          ))}
-        </div>
-
-        <div className="mt-20 text-center">
-           <p className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-300 animate-bounce">End of Intelligence stream</p>
-        </div>
+            {/* Read link */}
+            <Link
+              to={`/${(article.category || 'news').toLowerCase().replace(/\s+/g, '-')}/${article.slug}`}
+              className="inline-flex items-center gap-2 text-sm font-semibold no-underline transition-all group-hover:gap-3"
+              style={{ color: 'var(--accent)' }}
+            >
+              Read article <ArrowRight className="w-4 h-4" />
+            </Link>
+          </motion.article>
+        ))}
       </main>
 
       <Footer />
     </div>
   );
 };
-
-const QuickReadsSkeleton = () => (
-  <div className="min-h-screen" style={{ background: 'var(--bg-main)' }}>
-    <Navbar />
-    <div className="max-w-4xl mx-auto px-6 py-24 space-y-12">
-      {[1, 2, 3].map(i => (
-        <div key={i} className="h-96 w-full card rounded-[3rem] animate-pulse" />
-      ))}
-    </div>
-  </div>
-);
 
 export default QuickReads;
