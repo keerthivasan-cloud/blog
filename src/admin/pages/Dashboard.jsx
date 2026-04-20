@@ -33,7 +33,7 @@ const Dashboard = () => {
         });
         setStats(res.data);
       } catch (err) {
-        console.error("Stats Sync Failure", err);
+        if (!err?.isDuplicate) console.error("Stats Sync Failure", err);
       }
     };
     fetchStats();

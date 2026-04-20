@@ -6,6 +6,7 @@ import { Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import API_BASE_URL from '../config';
 import { updateSEOMetadata } from '../utils/seo';
+import { useContent } from '../context/ContentContext';
 
 const SkeletonCard = () => (
   <div className="card overflow-hidden animate-pulse">
@@ -19,6 +20,7 @@ const SkeletonCard = () => (
 );
 
 const CategoryPage = ({ category, title, description }) => {
+  const { lastDeletedId } = useContent();
   const [articles,    setArticles]    = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -28,6 +30,13 @@ const CategoryPage = ({ category, title, description }) => {
   useEffect(() => {
     updateSEOMetadata({ title: `${title} | NewsForge`, description });
   }, [category, title, description]);
+
+  // Global Deletion Sync
+  useEffect(() => {
+    if (lastDeletedId) {
+      setArticles(prev => prev.filter(a => String(a.id || a._id) !== String(lastDeletedId)));
+    }
+  }, [lastDeletedId]);
 
   useEffect(() => {
     setLoading(true);

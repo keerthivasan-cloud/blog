@@ -151,8 +151,10 @@ const AdminEditor = () => {
           }
         })
         .catch(err => {
-          console.error("Archive Retrieval Failure", err);
-          alert("Failed to retrieve asset from archive.");
+          if (!err?.isDuplicate) {
+             console.error("Archive Retrieval Failure", err);
+             alert("Failed to retrieve asset from archive.");
+          }
         });
     }
   }, [id, isNew]);

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import DOMPurify from 'dompurify';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, Link } from 'react-router-dom';
@@ -47,16 +47,29 @@ const ArticleDetail = () => {
   const [copied,      setCopied]      = useState(false);
   const [contentMode, setContentMode] = useState('full');
 
+  const isFetchingRef = useRef(false);
+
   useEffect(() => {
     if (category === 'admin') return;
 
     window.scrollTo(0, 0);
     setLoading(true);
+
     const load = async () => {
+      if (isFetchingRef.current) return;
+      isFetchingRef.current = true;
+
       try {
-        const res  = await axios.get(`${API_BASE_URL}/articles/${slug}`);
+        // Fetch main article and trending concurrently
+        const [res, trendingRes] = await Promise.all([
+          axios.get(`${API_BASE_URL}/articles/${slug}`),
+          axios.get(`${API_BASE_URL}/articles/trending`).catch(() => ({ data: [] }))
+        ]);
+
         const data = res.data;
         setArticle(data);
+        setTrending(trendingRes.data);
+
         updateSEOMetadata({
           title:       data.seo?.title       || data.title,
           description: data.seo?.description || data.excerpt,
@@ -65,17 +78,22 @@ const ArticleDetail = () => {
           type:        'article',
         });
         injectArticleJSONLD(data);
+
+        // Execute view tracking and related articles in the background
         axios.post(`${API_BASE_URL}/articles/${data._id || data.id}/view`).catch(() => {});
-        const relRes = await axios.get(`${API_BASE_URL}/articles?category=${data.category}`);
-        setRelated((relRes.data.articles || []).filter(a => a.slug !== data.slug).slice(0, 3));
+        
+        axios.get(`${API_BASE_URL}/articles?category=${data.category}`)
+          .then(relRes => setRelated((relRes.data.articles || []).filter(a => a.slug !== data.slug).slice(0, 3)))
+          .catch(() => setRelated([]));
+
       } catch (e) {
-        console.error(e);
+        if (!e.isDuplicate) console.error(e);
       } finally {
         setLoading(false);
+        isFetchingRef.current = false;
       }
     };
     load();
-    axios.get(`${API_BASE_URL}/articles/trending`).then(r => setTrending(r.data)).catch(() => {});
   }, [slug]);
 
   const formattedDate = useMemo(() => {

@@ -6,6 +6,7 @@ import { Navbar, Footer } from '../components/Layout';
 import { Zap, Clock, ArrowRight, BookOpen } from 'lucide-react';
 import API_BASE_URL from '../config';
 import { updateSEOMetadata } from '../utils/seo';
+import { useContent } from '../context/ContentContext';
 
 const formatDate = (d) =>
   new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -29,6 +30,7 @@ const QuickReadsSkeleton = () => (
 
 /* ── Page ──────────────────────────────────── */
 const QuickReads = () => {
+  const { lastDeletedId } = useContent();
   const [articles, setArticles] = useState([]);
   const [loading, setLoading]   = useState(true);
 
@@ -38,6 +40,13 @@ const QuickReads = () => {
       description: 'Short-form news briefs for professionals on the move.',
     });
   }, []);
+
+  // Global Deletion Sync
+  useEffect(() => {
+    if (lastDeletedId) {
+      setArticles(prev => prev.filter(a => String(a.id || a._id) !== String(lastDeletedId)));
+    }
+  }, [lastDeletedId]);
 
   useEffect(() => {
     const fetchArticles = async () => {

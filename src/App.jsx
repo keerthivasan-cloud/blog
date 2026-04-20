@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import './utils/axiosSetup'; // Global request deduplication
 import { ContentProvider, useContent } from './context/ContentContext';
+import PerformanceDashboard from './components/PerformanceDashboard';
 import Home from './pages/Home';
 import ArticleDetail from './pages/ArticleDetail';
 import About from './pages/About';
@@ -67,6 +69,7 @@ function App() {
 
   return (
     <ContentProvider>
+      <PerformanceDashboard />
       <Router>
         <Routes>
           {/* Public Routes */}

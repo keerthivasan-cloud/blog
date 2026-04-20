@@ -42,24 +42,49 @@ app.use(cors({
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma'],
+  exposedHeaders: ['X-Response-Time'],
   credentials: true
 }));
 
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      "img-src": ["'self'", "data:", "blob:", "https://*.supabase.co", "https://image.pollinations.ai", "https://images.unsplash.com", "https://images.pexels.com"],
+      "connect-src": ["'self'", "https://*.supabase.co", "https://api.pollinations.ai"]
+    }
+  }
+}));
 app.use(hpp());
 
 // Global Rate Limiter
 const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: { message: "Too many requests from this IP, please try again after 15 minutes." },
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 50, // limit each IP to 50 requests per minute
+  message: { message: "Too many requests from this IP, please try again later." },
   standardHeaders: true,
   legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    console.warn(`[RATE LIMIT 429] IP: ${req.ip} hit limit on ${req.originalUrl}`);
+    res.status(options.statusCode).send(options.message);
+  }
 });
 app.use("/api", globalLimiter);
 
 app.use(express.json());
 
+// API Performance Tracker Middleware
+app.use((req, res, next) => {
+  const startAt = process.hrtime();
+  res.on('finish', () => {
+    const diff = process.hrtime(startAt);
+    const timeInMs = (diff[0] * 1e3 + diff[1] * 1e-6).toFixed(2);
+    if (timeInMs > 300) {
+      console.warn(`[SLOW API] ${req.method} ${req.url} took ${timeInMs}ms`);
+    }
+  });
+  next();
+});
 
 // --- MULTER CONFIG (Memory Storage) ---
 const storage = multer.memoryStorage();
@@ -327,7 +352,7 @@ articleRouter.get("/:identifier", async (req, res) => {
     // Check if identifier is a UUID (approximate check)
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
     
-    let query = supabase.from('articles').select('*');
+    let query = supabase.from('articles').select('id, title, slug, category, excerpt, image, author, readTime, createdAt, tags, content, markdownContent, status');
     
     if (isUuid) {
       query = query.eq('id', identifier);
@@ -345,13 +370,30 @@ articleRouter.get("/:identifier", async (req, res) => {
 });
 
 articleRouter.delete("/:id", adminAuth, async (req, res) => {
-  console.log(`[DELETE DEBUG] Attempting to purge article ID: ${req.params.id}`);
+  const { id } = req.params;
+  console.log(`[DELETE DEBUG] Attempting to purge article ID: ${id}`);
+  
   try {
-    const { id } = req.params;
-    const { error } = await supabase.from('articles').delete().eq('id', id);
-    if (error) throw error;
-    res.json({ success: true, message: "Node purged from high-priority archive" });
+    const { data, error, count } = await supabase
+      .from('articles')
+      .delete()
+      .eq('id', id)
+      .select(); // Explicitly select to see what was deleted
+    
+    if (error) {
+       console.error("[DELETE ERROR] Supabase failure:", error);
+       throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      console.warn(`[DELETE WARNING] No article found with ID: ${id}. Zero rows affected.`);
+      return res.status(404).json({ success: false, message: "No node found with that identifier in existing archives." });
+    }
+
+    console.log(`[DELETE SUCCESS] Successfully purged article: ${data[0].title} (ID: ${id})`);
+    res.json({ success: true, message: "Node purged from high-priority archive", deleted: data[0] });
   } catch (err) {
+    console.error("[DELETE CRITICAL] Server logic failure:", err);
     res.status(500).json({ message: "Purge failure: " + err.message });
   }
 });
@@ -359,7 +401,7 @@ articleRouter.delete("/:id", adminAuth, async (req, res) => {
 // --- MANUAL ARTICLE SYNTHESIS ---
 articleRouter.post("/", adminAuth, async (req, res) => {
   try {
-    const { title, category, author, readTime, image, excerpt, content, slug: customSlug, status, tags, seo } = req.body;
+    const { title, category, author, readTime, image, excerpt, content, slug: customSlug, status, tags } = req.body;
     
     if (!title || !content) {
       return res.status(400).json({ message: "Intelligence Node Incomplete: Title and Content required." });
@@ -399,7 +441,6 @@ articleRouter.post("/", adminAuth, async (req, res) => {
       author: author || 'NewsForge',
       status: status || 'published',
       tags: Array.isArray(tags) ? tags : [],
-      seo: seo || null,
       readTime: readTime || 5,
       createdAt: date
     }]);

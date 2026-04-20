@@ -27,6 +27,7 @@ const setCachedArticles = (articles) => {
 
 export const ContentProvider = ({ children }) => {
   const [articles, setArticles] = useState(() => getCachedArticles() || []);
+  const [lastDeletedId, setLastDeletedId] = useState(null);
   const [user, setUser] = useState(null);
   const [darkMode, setDarkMode] = useState(false);
   const [marketData, setMarketData] = useState([]);
@@ -45,7 +46,7 @@ export const ContentProvider = ({ children }) => {
         const res = await axios.get(`${API_BASE_URL}/settings`);
         if (res.data) setSettings(res.data);
       } catch (err) {
-        console.error("Settings Synchronization Failure", err);
+        if (!err?.isDuplicate) console.error("Settings Synchronization Failure", err);
       }
     };
     fetchSettings();
@@ -107,7 +108,7 @@ export const ContentProvider = ({ children }) => {
         setArticles(fetched);
         setCachedArticles(fetched);
       } catch (error) {
-        console.error("Backend Synchronization Failure", error);
+        if (!error?.isDuplicate) console.error("Backend Synchronization Failure", error);
       }
     };
 
@@ -130,7 +131,12 @@ export const ContentProvider = ({ children }) => {
       await axios.delete(`${API_BASE_URL}/articles/${id}`, {
         headers: { Authorization: `Bearer ${ADMIN_SECRET}` }
       });
-      setArticles(prev => prev.filter(a => (a.id || a._id) !== id));
+      setArticles(prev => {
+        const remaining = prev.filter(a => String(a.id || a._id) !== String(id));
+        if (remaining.length === 0) sessionStorage.removeItem(CACHE_KEY);
+        return remaining;
+      });
+      setLastDeletedId(id); // Global Signal
       sessionStorage.removeItem(CACHE_KEY);
     } catch (error) {
       console.error("Archive Purge Failure", error);
@@ -155,6 +161,7 @@ export const ContentProvider = ({ children }) => {
   return (
     <ContentContext.Provider value={{
       articles,
+      lastDeletedId,
       user,
       login,
       logout,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Zap, Tag } from 'lucide-react';
 import axios from 'axios';
@@ -51,7 +51,7 @@ const formatDate = (d) =>
 
 /* ─── Home ──────────────────────────────────── */
 const Home = () => {
-  const { articles: cachedArticles } = useContent();
+  const { articles: cachedArticles, lastDeletedId } = useContent();
   const [articles,      setArticles]      = useState(cachedArticles || []);
   const [trendingTags,  setTrendingTags]  = useState([]);
   const [activeCategory,setActiveCategory]= useState('All');
@@ -69,14 +69,38 @@ const Home = () => {
     });
   }, []);
 
+  // Live Sync: Instantly remove deleted articles from the view
+  useEffect(() => {
+    if (lastDeletedId) {
+      setArticles(prev => prev.filter(a => String(a.id || a._id) !== String(lastDeletedId)));
+    }
+  }, [lastDeletedId]);
+
+  // Initial Sync from context cache
+  useEffect(() => {
+    if (page === 1 && activeCategory === 'All' && !activeTag && articles.length === 0) {
+      setArticles(cachedArticles);
+    }
+  }, [cachedArticles, page, activeCategory, activeTag, articles.length]);
+
   /* Refetch on category / tag change */
   useEffect(() => {
+    if (activeCategory === 'All' && !activeTag && articles.length > 0 && page === 1) {
+      // Avoid duplicate fetch on initial mount if cache populated it
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setPage(1);
     fetchArticles(1, true);
   }, [activeCategory, activeTag]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const isFetchingRef = useRef(false);
+
   const fetchArticles = async (pageNum, isInitial = false) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
     if (!isInitial) setLoadingMore(true);
     const params = new URLSearchParams({ page: pageNum, limit: 6 });
     if (activeCategory !== 'All') params.append('category', activeCategory);
@@ -87,10 +111,11 @@ const Home = () => {
       setArticles(prev => isInitial ? next : [...prev, ...next]);
       setHasMore(pageNum < res.data.totalPages);
     } catch (e) {
-      console.error(e);
+      if (!e.isDuplicate) console.error(e);
     } finally {
       setLoading(false);
       setLoadingMore(false);
+      isFetchingRef.current = false;
     }
   };
 
