@@ -756,48 +756,77 @@ app.post("/api/blogs/generate", adminAuth, async (req, res) => {
   const sectionTarget = depth === 'deep' ? '8-10' : '4-6';
 
   try {
-    const prompt = `You are a world-class industry analyst writing a HIGHLY DETAILED, FULL-LENGTH deep-dive report.
+    const prompt = `You are a professional SEO blog writer.
 
-TOPIC: "${topicClean}"
+Write a high-quality, human-like blog article.
 
-CRITICAL INSTRUCTION: You MUST output a complete, fully fleshed-out article. Do NOT output a short summary. 
+INPUT:
+Topic: "${topicClean}"
+${req.body.keywords ? `CONTEXT:\\n- Topic keywords: ${req.body.keywords}` : ''}
+${req.body.keyPoints ? `\\n- Key points: ${req.body.keyPoints}` : ''}
 
-REQUIRED STRUCTURE (You MUST include ALL of these formatting elements):
-1. Introduction: A powerful hook and executive summary paragraphs.
-2. Headings: You MUST use ${sectionTarget} distinct "##" (H2) headings.
-3. Subsections: Use "###" (H3) for granular details under your main points.
-4. Blockquotes: You MUST include at least 2 quotes starting with "> ". Use these to highlight major industry takeaways or hypothetical expert opinions.
-5. Bullet Points: You MUST include at least 2 bulleted lists (starting with "- ") to break down complex data, steps, or features.
-6. Highlights: You MUST wrap the 3 most important insights in double asterisks like this: **This is a critical insight**. (Make sure the bold text is an entire sentence, 20-100 characters long).
-7. Conclusion: A robust final takeaway.
+REQUIREMENTS:
+- Length: 900–1200 words
+- Tone: clear, authoritative, natural (NOT robotic)
+- Audience: general readers
 
-YOUR WRITING STYLE & CONTENT RULES:
-- Focus: Be hyper-specific and laser-focused on the EXACT topic. Do not drift into generic or tangential subjects.
-- Precision: Provide concrete examples, realistic scenarios, and direct technical or business facts. Avoid fluff, filler words, or repetitive boilerplate.
-- Target length: Exactly ${wordTarget} words. Write substantive, value-dense paragraphs rather than padding word count with generalizations.
-- Tone: Professional, authoritative, actionable, yet engaging (like a high-end Substack or Harvard Business Review article).
-- Expand on every single point intelligently. Explain the "why" and "how" with precise logic.
-- NO generic intros or outflows like "In conclusion", "As we can see", or "Let's delve in". Give hard substance immediately.
-- Write strictly in Markdown.
+STRUCTURE:
+1. Hook introduction (engaging, 2–3 paragraphs)
+2. Clear H2 sections (5–7 sections)
+3. Each section must:
+   - explain concept properly
+   - include examples or real-world context
+4. Add bullet points where useful
+5. Add one comparison table if relevant
+6. Add a short conclusion
+
+STRICT RULES:
+- No fluff
+- No repetition
+- No generic statements like “in today’s world”
+- No AI-style phrases
+- Content must directly match the topic (no drifting)
+
+SEO:
+- Naturally include keywords related to the topic
+- Add a compelling title
+- Add meta description (150–160 chars)
 
 IMAGE PROMPT RULES:
-Create a specific image generation prompt for a blog thumbnail that visually matches the exact topic.
-- Style: modern digital art, high contrast, blog thumbnail style
-- Must visually represent the EXACT topic — not a generic tech image
-- Clear subject focus, minimal or no text overlay
-- Vivid and descriptive so an AI image generator can create it
+Create a realistic, high-quality blog illustration.
+Topic: "${topicClean}"
+Style:
+- modern, clean
+- realistic (NOT cartoon unless topic needs)
+- minimal text
+- suitable for blog header
 
-Example — for topic "AI replacing jobs":
-"Futuristic illustration of robots and AI systems at office desks while humans observe from a distance, modern digital art, high contrast, blog thumbnail style, cool blue tones"
+Avoid:
+- random elements
+- unrelated visuals
+- over-stylized AI look
+
+QUALITY CONTROL:
+Check this article for:
+- relevance to topic
+- clarity
+- repetition
+- useless content
+
+Return:
+- issues
+- improved version if needed. (Your final output inside 'content' must be the improved version)
 
 OUTPUT FORMAT — STRICT:
 Return ONLY a valid JSON object. No markdown. No backticks. No explanation. Nothing before or after the JSON.
 CRITICAL JSON RULE: You MUST escape all newlines as \\n inside the string values. DO NOT output raw line breaks inside the "content" string.
 
 {
-  "title": "Your engaging, topic-specific title",
-  "content": "Full markdown article. You MUST use \\n\\n to separate all headings, paragraphs, and list blocks. Example: ## Heading\\n\\nParagraph text... Use ## for H2 headings, ### for H3, **bold** for key terms, - for bullet lists. No YAML frontmatter inside content.",
-  "image_prompt": "Your detailed, topic-specific image generation prompt"
+  "title": "Your compelling, topic-specific title",
+  "meta_description": "Your 150-160 character meta description",
+  "content": "Full improved article. You MUST use \\n\\n to separate all elements. Note: Provide the text using standard Markdown formatting (e.g., ## for H2, - for bullets) so it seamlessly integrates with our markdown parser.",
+  "image_prompt": "Your realistic, high-quality blog illustration image prompt",
+  "qc_issues": "Brief summary of quality control issues found and fixed"
 }`;
 
     const updateStatus = (msg) => {
