@@ -1,0 +1,20 @@
+{
+  "name": "NewsForge",
+  "short_name": "NewsForge",
+  "description": "Premium journalism for modern professionals — tech, finance, and global markets.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#111111",
+  "theme_color": "#E84C1E",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["news", "business", "finance"],
+  "lang": "en"
+}

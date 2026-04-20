@@ -1,14 +1,22 @@
-import React from 'react';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Navbar, Footer } from '../components/Layout';
 import { FileText, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { updateSEOMetadata } from '../utils/seo';
 
 const Terms = () => {
+  useEffect(() => {
+    updateSEOMetadata({
+      title: 'Terms & Conditions — NewsForge',
+      description: 'Read the terms and conditions governing use of the NewsForge platform and its content.',
+    });
+  }, []);
+
   return (
     <div className="min-h-screen transition-colors duration-500" style={{ background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
       <Navbar />
-      <main className="max-w-4xl mx-auto px-8 pt-40 pb-60">
+      <main className="max-w-4xl mx-auto px-5 md:px-8 pt-16 md:pt-24 pb-20 md:pb-32">
         <motion.div
            initial={{ opacity: 0, y: 30 }}
            animate={{ opacity: 1, y: 0 }}

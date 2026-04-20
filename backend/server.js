@@ -955,6 +955,45 @@ app.post("/api/upload", adminAuth, upload.single("image"), async (req, res) => {
   }
 });
 
+// --- CONTACT FORM ---
+app.post("/api/contact", async (req, res) => {
+  try {
+    const { name, email, message } = req.body;
+    if (!name || !email || !message) {
+      return res.status(400).json({ success: false, message: "All fields are required." });
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ success: false, message: "Invalid email address." });
+    }
+
+    if (resend) {
+      await resend.emails.send({
+        from: 'NewsForge Contact <onboarding@resend.dev>',
+        to: 'contact@newsforge.in',
+        reply_to: email,
+        subject: `Contact Form: ${name}`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #eee; border-radius: 8px;">
+            <h2 style="margin-bottom: 4px;">New Contact Message</h2>
+            <p style="color: #666; margin-bottom: 24px; font-size: 13px;">Submitted via newsforge.in/contact</p>
+            <table style="width:100%; border-collapse: collapse; font-size: 14px;">
+              <tr><td style="padding: 8px 0; color: #888; width: 80px;">Name</td><td style="padding: 8px 0; font-weight: 600;">${name}</td></tr>
+              <tr><td style="padding: 8px 0; color: #888;">Email</td><td style="padding: 8px 0;"><a href="mailto:${email}">${email}</a></td></tr>
+            </table>
+            <div style="margin-top: 20px; padding: 16px; background: #f9f9f9; border-radius: 6px; font-size: 14px; line-height: 1.6; white-space: pre-wrap;">${message}</div>
+          </div>
+        `
+      });
+    }
+
+    res.json({ success: true, message: "Message received." });
+  } catch (err) {
+    console.error("Contact form error:", err);
+    res.status(500).json({ success: false, message: "Failed to send message." });
+  }
+});
+
 // --- GLOBAL CATCH-ALL & DEBUGGER ---
 app.use((req, res) => {
   console.log(`[404 DEBUG] Route not found: ${req.method} ${req.url}`);

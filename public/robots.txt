@@ -3,4 +3,4 @@ User-agent: *
 Allow: /
 
 # Sitemap Location
-Sitemap: http://localhost:5001/sitemap.xml
+Sitemap: https://newsforge.in/sitemap.xml

@@ -1,10 +1,18 @@
-import React from 'react';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Navbar, Footer } from '../components/Layout';
 import { Target, Users, Shield, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { updateSEOMetadata } from '../utils/seo';
 
 const About = () => {
+  useEffect(() => {
+    updateSEOMetadata({
+      title: 'About NewsForge — Expert Journalism for Modern Professionals',
+      description: 'NewsForge is a high-performance digital publication covering global markets, deep-tech, and monetary policy. Learn about our mission and team.',
+    });
+  }, []);
+
   return (
     <div className="min-h-screen transition-colors duration-500" style={{ background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
       <Navbar />

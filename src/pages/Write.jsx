@@ -146,7 +146,7 @@ const Write = () => {
     image: '', tags: [],
     seo: { metaTitle: '', metaDescription: '' },
     content: [{ type: 'paragraph', text: '' }],
-    status: 'published',
+    status: 'draft',
   });
   const [isSaving,    setIsSaving]    = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -160,7 +160,7 @@ const Write = () => {
   const [md, setMd] = useState({
     title: '', content: '', category: 'Tech', image: '', tags: [],
     excerpt: '', seo: { metaTitle: '', metaDescription: '' },
-    images: [], status: 'published',
+    images: [], status: 'draft',
   });
   const [mdIsSaving, setMdIsSaving] = useState(false);
   const fileInputRef = useRef(null);

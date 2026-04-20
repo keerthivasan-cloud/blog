@@ -1,14 +1,22 @@
-import React from 'react';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Navbar, Footer } from '../components/Layout';
-import { ShieldAlert, Zap, ArrowLeft } from 'lucide-react';
+import { ShieldAlert, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { updateSEOMetadata } from '../utils/seo';
 
 const Privacy = () => {
+  useEffect(() => {
+    updateSEOMetadata({
+      title: 'Privacy Policy — NewsForge',
+      description: 'Learn how NewsForge collects, uses, and protects your personal information.',
+    });
+  }, []);
+
   return (
     <div className="min-h-screen transition-colors duration-500" style={{ background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
       <Navbar />
-      <main className="max-w-4xl mx-auto px-8 pt-40 pb-60">
+      <main className="max-w-4xl mx-auto px-5 md:px-8 pt-16 md:pt-24 pb-20 md:pb-32">
         <motion.div
            initial={{ opacity: 0, y: 30 }}
            animate={{ opacity: 1, y: 0 }}

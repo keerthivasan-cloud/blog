@@ -20,6 +20,7 @@ import Notifications from './admin/pages/Notifications';
 import Settings from './admin/pages/Settings';
 import QuickReads from './pages/QuickReads';
 import Terms from './pages/Terms';
+import NotFound from './pages/NotFound';
 
 // Category Pages
 import BusinessIndex from './pages/business/index';
@@ -50,18 +51,16 @@ function App() {
         }
         if (data.adsenseScript && !document.querySelector('script[src*="adsbygoogle"]')) {
            try {
-             // Create a temp div to parse the script tag text
              const temp = document.createElement('div');
              temp.innerHTML = data.adsenseScript.trim();
              const originalScript = temp.querySelector('script');
-             
              if (originalScript) {
                const script = document.createElement('script');
                Array.from(originalScript.attributes).forEach(attr => script.setAttribute(attr.name, attr.value));
                script.innerHTML = originalScript.innerHTML;
                document.head.appendChild(script);
              }
-           } catch(e) { console.error('AdSense Inject Error', e) }
+           } catch(e) { console.error('AdSense Inject Error', e); }
         }
       })
       .catch(err => console.error('Settings Sync Error', err));
@@ -69,7 +68,7 @@ function App() {
 
   return (
     <ContentProvider>
-      <PerformanceDashboard />
+      {import.meta.env.DEV && <PerformanceDashboard />}
       <Router>
         <Routes>
           {/* Public Routes */}
@@ -103,6 +102,9 @@ function App() {
 
           {/* Dynamic Editorial Routes (must be below static /admin routes) */}
           <Route path="/:category/:slug" element={<ArticleDetail />} />
+
+          {/* 404 */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
     </ContentProvider>
