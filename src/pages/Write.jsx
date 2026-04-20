@@ -125,7 +125,7 @@ const MODES = [
   { id: 'markdown', icon: FileText, label: 'Markdown Upload' },
 ];
 
-const CATEGORIES = ['Intelligence', 'Tech', 'Finance', 'Business', 'Markets', 'Commodities', 'General News'];
+const CATEGORIES = ['General News', 'Tech', 'Business', 'Finance', 'Markets', 'Commodities', 'Intelligence'];
 
 /* ─── Write ──────────────────────────────────────── */
 const Write = () => {
@@ -135,14 +135,14 @@ const Write = () => {
 
   /* ── AI state ── */
   const [genTopic,          setGenTopic]          = useState('');
-  const [genCategory,       setGenCategory]       = useState('Intelligence');
+  const [genCategory,       setGenCategory]       = useState('General News');
   const [genProvider,       setGenProvider]       = useState('auto');
   const [generating,        setGenerating]        = useState(false);
   const [generationStatus,  setGenerationStatus]  = useState('');
 
   /* ── Manual state ── */
   const [manual, setManual] = useState({
-    title: '', category: 'Tech', readTime: 5, excerpt: '',
+    title: '', category: 'General News', readTime: 5, excerpt: '',
     image: '', tags: [],
     seo: { metaTitle: '', metaDescription: '' },
     content: [{ type: 'paragraph', text: '' }],
@@ -158,7 +158,7 @@ const Write = () => {
   const [mdError,    setMdError]    = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [md, setMd] = useState({
-    title: '', content: '', category: 'Tech', image: '', tags: [],
+    title: '', content: '', category: 'General News', image: '', tags: [],
     excerpt: '', seo: { metaTitle: '', metaDescription: '' },
     images: [], status: 'draft',
   });
