@@ -5,7 +5,7 @@ import axios from 'axios';
 import { Navbar, Footer, BlogCard } from '../components/Layout';
 import API_BASE_URL from '../config';
 import { updateSEOMetadata } from '../utils/seo';
-import { useContent } from '../context/ContentContext';
+import { useContent, _tagsPrefetch, TAGS_CACHE_KEY } from '../context/ContentContext';
 import AdPlacement from '../components/AdPlacement';
 
 /* ─── Skeleton card ─────────────────────────── */
@@ -120,9 +120,22 @@ const Home = () => {
   };
 
   useEffect(() => {
-    axios.get(`${API_BASE_URL}/articles/trending-tags`)
-      .then(r => setTrendingTags(r.data))
-      .catch(() => {});
+    const CACHE_TTL = 5 * 60 * 1000;
+    try {
+      const raw = sessionStorage.getItem(TAGS_CACHE_KEY);
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (parsed && Date.now() - parsed.ts < CACHE_TTL) {
+        setTrendingTags(parsed.tags);
+        return;
+      }
+    } catch {}
+
+    const promise = _tagsPrefetch || axios.get(`${API_BASE_URL}/articles/trending-tags`).catch(() => null);
+    promise.then(r => {
+      if (!r) return;
+      setTrendingTags(r.data);
+      try { sessionStorage.setItem(TAGS_CACHE_KEY, JSON.stringify({ tags: r.data, ts: Date.now() })); } catch {}
+    });
   }, []);
 
   const handleLoadMore = () => {

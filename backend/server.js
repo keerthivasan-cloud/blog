@@ -223,18 +223,25 @@ articleRouter.get("/", async (req, res) => {
   }
 });
 
+let _tagsCache = null;
+let _tagsCacheTs = 0;
+const TAGS_TTL = 5 * 60 * 1000;
+
 articleRouter.get("/trending-tags", async (req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  if (_tagsCache && Date.now() - _tagsCacheTs < TAGS_TTL) {
+    return res.json(_tagsCache);
+  }
   try {
-    // Limit search to the last 50 articles to avoid heavy processing
     const { data: posts, error } = await supabase
       .from('articles')
       .select('tags')
       .eq('status', 'published')
       .order('createdAt', { ascending: false })
       .limit(50);
-      
+
     if (error) throw error;
-    
+
     const tagFreq = new Map();
     (posts || []).forEach(post => {
       (post.tags || []).forEach(tag => {
@@ -249,7 +256,9 @@ articleRouter.get("/trending-tags", async (req, res) => {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10)
       .map(entry => ({ name: entry[0], count: entry[1] }));
-      
+
+    _tagsCache = tagsArray;
+    _tagsCacheTs = Date.now();
     res.json(tagsArray);
   } catch (err) {
     res.status(500).json({ message: err.message });

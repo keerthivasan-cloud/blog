@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import { fetchMarketData } from '../services/marketData';
 
@@ -9,6 +9,7 @@ const ContentContext = createContext();
 export const useContent = () => useContext(ContentContext);
 
 const CACHE_KEY = 'nf_articles_v1';
+export const TAGS_CACHE_KEY = 'nf_trending_tags_v1';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 const getCachedArticles = () => {
@@ -24,6 +25,26 @@ const getCachedArticles = () => {
 const setCachedArticles = (articles) => {
   try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ articles, ts: Date.now() })); } catch {}
 };
+
+// Module-level prefetch — fires when this module is first imported, before React mounts.
+// By starting the network request here, we eliminate the delay caused by React init + useEffect scheduling.
+export let _articlesPrefetch = null;
+export let _tagsPrefetch = null;
+
+if (typeof window !== 'undefined') {
+  if (!getCachedArticles()) {
+    _articlesPrefetch = axios.get(`${API_BASE_URL}/articles?page=1&limit=6`).catch(() => null);
+  }
+  try {
+    const raw = sessionStorage.getItem(TAGS_CACHE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (!parsed || Date.now() - parsed.ts > CACHE_TTL) {
+      _tagsPrefetch = axios.get(`${API_BASE_URL}/articles/trending-tags`).catch(() => null);
+    }
+  } catch {
+    _tagsPrefetch = axios.get(`${API_BASE_URL}/articles/trending-tags`).catch(() => null);
+  }
+}
 
 export const ContentProvider = ({ children }) => {
   const [articles, setArticles] = useState(() => getCachedArticles() || []);
@@ -78,16 +99,16 @@ export const ContentProvider = ({ children }) => {
     }
   };
 
-  // Market data — 30s polling
+  // Market data — deferred 2s so it doesn't race with the critical articles fetch
   useEffect(() => {
     const updateMarket = async () => {
       const data = await fetchMarketData(import.meta.env.VITE_TWELVEDATA_API_KEY);
       setMarketData(data);
     };
 
-    updateMarket();
+    const timer = setTimeout(updateMarket, 2000);
     const interval = setInterval(updateMarket, 30000);
-    return () => clearInterval(interval);
+    return () => { clearTimeout(timer); clearInterval(interval); };
   }, []);
 
   // Articles: stale-while-revalidate
@@ -103,8 +124,10 @@ export const ContentProvider = ({ children }) => {
 
     const fetchArticles = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/articles?page=1&limit=6`);
-        const fetched = res.data.articles || [];
+        // Consume the module-level prefetch if it's still pending; otherwise start a new request
+        const res = await (_articlesPrefetch || axios.get(`${API_BASE_URL}/articles?page=1&limit=6`));
+        _articlesPrefetch = null;
+        const fetched = res?.data?.articles || [];
         setArticles(fetched);
         setCachedArticles(fetched);
       } catch (error) {
