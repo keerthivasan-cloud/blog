@@ -102,7 +102,7 @@ const Home = () => {
     isFetchingRef.current = true;
 
     if (!isInitial) setLoadingMore(true);
-    const params = new URLSearchParams({ page: pageNum, limit: 6 });
+    const params = new URLSearchParams({ page: pageNum, limit: 10 });
     if (activeCategory !== 'All') params.append('category', activeCategory);
     if (activeTag)                params.append('tag', activeTag);
     try {
@@ -219,7 +219,7 @@ const Home = () => {
                 <button
                   key={cat}
                   onClick={() => { setActiveCategory(cat); setActiveTag(null); }}
-                  className="shrink-0 px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer border-none"
+                  className="shrink-0 px-4 py-2 rounded-full text-sm font-bold transition-all cursor-pointer border-none min-h-[36px]"
                   style={{
                     background: active ? 'var(--accent)'   : 'transparent',
                     color:      active ? '#FFFFFF'         : 'var(--text-muted)',
@@ -234,11 +234,11 @@ const Home = () => {
       </div>
 
       {/* ── LATEST ARTICLES ───────────────────── */}
-      <section id="latest-feed" className="max-w-7xl mx-auto px-5 md:px-8 py-12">
-        <div className="flex items-center justify-between mb-8">
+      <section id="latest-feed" className="max-w-7xl mx-auto px-5 md:px-8 py-8 md:py-12">
+        <div className="flex items-center justify-between mb-6 md:mb-8">
           <div>
             <p className="section-label mb-1">Latest Articles</p>
-            <h2 className="text-2xl font-bold" style={{ letterSpacing: '-0.03em' }}>
+            <h2 className="text-3xl md:text-2xl font-bold" style={{ letterSpacing: '-0.03em' }}>
               {activeCategory === 'All' ? 'All Stories' : activeCategory}
             </h2>
           </div>
@@ -250,7 +250,7 @@ const Home = () => {
         </div>
 
         {/* Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
           {loading
             ? [1, 2, 3, 4, 5, 6].map(i => <SkeletonCard key={i} />)
             : (activeCategory === 'All' ? gridArticles : articles).map((item, idx) => (
@@ -282,7 +282,7 @@ const Home = () => {
             <button
               onClick={handleLoadMore}
               disabled={loadingMore}
-              className="btn-ghost px-8 py-2.5 disabled:opacity-50"
+              className="btn-ghost px-8 disabled:opacity-50"
             >
               {loadingMore ? 'Loading…' : 'Load more articles'}
               <ArrowRight className="w-4 h-4" />
@@ -295,17 +295,17 @@ const Home = () => {
       <div className="divider" />
 
       {/* ── TRENDING TOPICS + NEWSLETTER ──────── */}
-      <section className="max-w-7xl mx-auto px-5 md:px-8 py-14">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12">
+      <section className="max-w-7xl mx-auto px-5 md:px-8 py-10 md:py-14">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
 
           {/* Trending topics */}
           {trendingTags.length > 0 && (
             <div>
-              <div className="flex items-center gap-2 mb-6">
-                <Tag className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-                <h3 className="text-lg font-bold">Trending Topics</h3>
+              <div className="flex items-center gap-2 mb-5">
+                <Tag className="w-5 h-5" style={{ color: 'var(--accent)' }} />
+                <h3 className="text-xl font-bold">Trending Topics</h3>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2.5">
                 {trendingTags.map(tag => {
                   const active = activeTag === tag.name;
                   return (
@@ -316,11 +316,11 @@ const Home = () => {
                         setActiveCategory('All');
                         document.getElementById('latest-feed')?.scrollIntoView({ behavior: 'smooth' });
                       }}
-                      className="px-3 py-1.5 rounded-full text-sm font-medium border cursor-pointer transition-all"
+                      className="px-4 py-2 rounded-full text-sm font-medium border cursor-pointer transition-all min-h-[40px]"
                       style={{
-                        background:   active ? 'var(--accent)'      : 'transparent',
-                        color:        active ? '#fff'                : 'var(--text-secondary)',
-                        borderColor:  active ? 'var(--accent)'       : 'var(--border)',
+                        background:  active ? 'var(--accent)'   : 'transparent',
+                        color:       active ? '#fff'             : 'var(--text-secondary)',
+                        borderColor: active ? 'var(--accent)'    : 'var(--border)',
                       }}
                     >
                       {tag.name}
@@ -334,28 +334,28 @@ const Home = () => {
 
           {/* Newsletter CTA */}
           <div
-            className="rounded-xl p-8"
+            className="rounded-xl p-6 md:p-8"
             style={{ background: 'var(--bg-soft)', border: '1px solid var(--border)' }}
           >
             <Zap className="w-6 h-6 mb-4" style={{ color: 'var(--accent)' }} />
-            <h3 className="text-xl font-bold mb-2" style={{ letterSpacing: '-0.025em' }}>
+            <h3 className="text-2xl md:text-xl font-bold mb-2" style={{ letterSpacing: '-0.025em' }}>
               Stay ahead of the news
             </h3>
-            <p className="text-sm leading-relaxed mb-5" style={{ color: 'var(--text-muted)' }}>
+            <p className="text-[15px] leading-relaxed mb-5" style={{ color: 'var(--text-muted)' }}>
               Join 42,000+ professionals reading our weekly briefing. No spam, unsubscribe any time.
             </p>
             <form
-              className="flex flex-col sm:flex-row gap-2"
+              className="flex flex-col gap-3"
               onSubmit={e => { e.preventDefault(); document.querySelector('footer input[type=email]')?.focus(); }}
             >
               <input
                 type="email"
                 placeholder="Your email address"
-                className="input flex-1 text-sm"
+                className="input"
                 readOnly
                 onFocus={e => { e.target.removeAttribute('readonly'); }}
               />
-              <button type="submit" className="btn-primary whitespace-nowrap">
+              <button type="submit" className="btn-primary justify-center">
                 Subscribe
               </button>
             </form>

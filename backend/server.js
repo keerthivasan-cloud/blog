@@ -187,7 +187,7 @@ articleRouter.post("/:id/react", (req, res) => {
 articleRouter.get("/", async (req, res) => {
   try {
     res.setHeader('Cache-Control', 'public, max-age=300');
-    const { category, tag, limit = 9, page = 1 } = req.query;
+    const { category, tag, limit = 10, page = 1 } = req.query;
     const pageSize = parseInt(limit);
     const pageNum = parseInt(page);
     const start = (pageNum - 1) * pageSize;

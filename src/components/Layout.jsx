@@ -168,14 +168,14 @@ export const Navbar = () => {
             className="lg:hidden fixed top-[60px] left-0 right-0 z-40 border-b"
             style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
           >
-            <nav className="max-w-7xl mx-auto px-5 py-4 flex flex-col gap-1">
+            <nav className="max-w-7xl mx-auto px-5 py-3 flex flex-col gap-0.5">
               {navLinks.map(link => (
                 <Link
                   key={link.href}
                   to={link.href}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="px-3 py-2.5 rounded-md text-sm font-medium no-underline transition-colors"
-                  style={{ color: 'var(--text-secondary)' }}
+                  className="px-3 py-3.5 rounded-md text-base font-medium no-underline transition-colors"
+                  style={{ color: 'var(--text-secondary)', minHeight: '44px', display: 'flex', alignItems: 'center' }}
                 >
                   {link.label}
                 </Link>
@@ -372,7 +372,7 @@ export const BlogCard = ({
             src={image}
             alt={title}
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-            loading="lazy"
+            fetchpriority="high"
             decoding="async"
           />
         </div>
@@ -380,15 +380,15 @@ export const BlogCard = ({
         {/* Content */}
         <div className="relative p-5 md:absolute md:bottom-0 md:left-0 md:right-0 md:p-10 z-20">
           <span className="section-label mb-2 md:mb-3 inline-block md:text-white/80">{category}</span>
-          <h2 className="text-xl md:text-4xl lg:text-5xl font-bold text-[var(--text-primary)] md:text-white leading-tight mb-3 max-w-3xl" style={{ letterSpacing: '-0.03em' }}>
+          <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-[var(--text-primary)] md:text-white leading-tight mb-3 max-w-3xl" style={{ letterSpacing: '-0.03em' }}>
             <Link to={link} className="no-underline text-inherit hover:opacity-90 transition-opacity line-clamp-2 md:line-clamp-none">
               {title}
             </Link>
           </h2>
-          <div className="flex items-center gap-3 text-sm text-[var(--text-muted)] md:text-white/60">
+          <div className="flex items-center gap-3 text-[15px] md:text-sm text-[var(--text-muted)] md:text-white/60">
             <span className="font-medium">{displayAuthor}</span>
             <span>·</span>
-            <Clock className="w-3.5 h-3.5" />
+            <Clock className="w-4 h-4 md:w-3.5 md:h-3.5" />
             <span>{readTime} min read</span>
           </div>
         </div>
@@ -450,29 +450,29 @@ export const BlogCard = ({
       <div className="flex flex-col flex-1 p-5 md:p-6">
         <div className="flex items-center justify-between mb-3">
           <span className="section-label">{category}</span>
-          {date && <span className="text-[11px] font-medium" style={{ color: 'var(--text-muted)' }}>{date}</span>}
+          {date && <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{date}</span>}
         </div>
-        
-        <h3 className="text-base md:text-lg font-bold leading-snug mb-2 line-clamp-2 transition-colors" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+
+        <h3 className="text-lg md:text-xl font-bold leading-snug mb-2 line-clamp-2 transition-colors" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
           <Link to={link} className="no-underline hover:text-[var(--accent)] transition-colors">{title}</Link>
         </h3>
-        
+
         {summary && (
-          <p className="text-[13px] md:text-sm leading-relaxed line-clamp-2 flex-1 mb-5" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-sm md:text-[15px] leading-relaxed line-clamp-2 flex-1 mb-5" style={{ color: 'var(--text-secondary)' }}>
             {summary}
           </p>
         )}
 
         {/* Meta */}
-        <div className="flex items-center justify-between pt-4 mt-auto border-t text-[11px] md:text-xs" style={{ borderColor: 'var(--border-soft)', color: 'var(--text-muted)' }}>
+        <div className="flex items-center justify-between pt-4 mt-auto border-t text-xs" style={{ borderColor: 'var(--border-soft)', color: 'var(--text-muted)' }}>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] md:text-[11px] font-bold" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>
               {displayAuthor[0]?.toUpperCase()}
             </div>
-            <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>{displayAuthor}</span>
+            <span className="font-semibold text-sm" style={{ color: 'var(--text-secondary)' }}>{displayAuthor}</span>
           </div>
-          <div className="flex items-center gap-1.5 font-medium">
-            <Clock className="w-3 h-3" />
+          <div className="flex items-center gap-1.5 font-medium text-xs">
+            <Clock className="w-3.5 h-3.5" />
             <span>{readTime} min</span>
           </div>
         </div>

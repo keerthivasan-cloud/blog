@@ -33,7 +33,7 @@ export let _tagsPrefetch = null;
 
 if (typeof window !== 'undefined') {
   if (!getCachedArticles()) {
-    _articlesPrefetch = axios.get(`${API_BASE_URL}/articles?page=1&limit=6`).catch(() => null);
+    _articlesPrefetch = axios.get(`${API_BASE_URL}/articles?page=1&limit=10`).catch(() => null);
   }
   try {
     const raw = sessionStorage.getItem(TAGS_CACHE_KEY);
