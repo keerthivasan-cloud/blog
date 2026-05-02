@@ -109,7 +109,7 @@ const Home = () => {
       const res = await axios.get(`${API_BASE_URL}/articles?${params}`);
       const next = res.data.articles || [];
       setArticles(prev => isInitial ? next : [...prev, ...next]);
-      setHasMore(pageNum < res.data.totalPages);
+      setHasMore(res.data.hasMore);
     } catch (e) {
       if (!e.isDuplicate) console.error(e);
     } finally {

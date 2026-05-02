@@ -16,10 +16,18 @@ const getCachedArticles = () => {
   try {
     const raw = sessionStorage.getItem(CACHE_KEY);
     if (!raw) return null;
-    const { articles, ts } = JSON.parse(raw);
-    if (Date.now() - ts > CACHE_TTL) { sessionStorage.removeItem(CACHE_KEY); return null; }
-    return articles;
+    const { articles } = JSON.parse(raw);
+    return articles || null;
   } catch { return null; }
+};
+
+const isCacheFresh = () => {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    if (!raw) return false;
+    const { ts } = JSON.parse(raw);
+    return Date.now() - ts < CACHE_TTL;
+  } catch { return false; }
 };
 
 const setCachedArticles = (articles) => {
@@ -32,7 +40,7 @@ export let _articlesPrefetch = null;
 export let _tagsPrefetch = null;
 
 if (typeof window !== 'undefined') {
-  if (!getCachedArticles()) {
+  if (!isCacheFresh()) {
     _articlesPrefetch = axios.get(`${API_BASE_URL}/articles?page=1&limit=10`).catch(() => null);
   }
   try {
@@ -112,20 +120,17 @@ export const ContentProvider = ({ children }) => {
   }, []);
 
   // Articles: stale-while-revalidate
-  // - Seed state from sessionStorage immediately (zero-latency first paint)
-  // - Then fetch fresh data in background; update cache + state on success
-  // - No polling — pages manage their own paginated fetches
+  // - Seed state from sessionStorage immediately (even if stale) — zero-latency first paint
+  // - Skip background fetch only when cache is fresh (< 5 min); always refresh if stale
   useEffect(() => {
     const savedUser = localStorage.getItem('newsforge_user');
     if (savedUser) setUser(JSON.parse(savedUser));
 
-    // Only background-fetch if cache was empty on mount
-    if (getCachedArticles()) return;
+    if (isCacheFresh()) return;
 
     const fetchArticles = async () => {
       try {
-        // Consume the module-level prefetch if it's still pending; otherwise start a new request
-        const res = await (_articlesPrefetch || axios.get(`${API_BASE_URL}/articles?page=1&limit=6`));
+        const res = await (_articlesPrefetch || axios.get(`${API_BASE_URL}/articles?page=1&limit=10`));
         _articlesPrefetch = null;
         const fetched = res?.data?.articles || [];
         setArticles(fetched);
@@ -140,7 +145,7 @@ export const ContentProvider = ({ children }) => {
 
   const refreshArticles = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/articles?page=1&limit=6`);
+      const res = await axios.get(`${API_BASE_URL}/articles?page=1&limit=10`);
       const fetched = res.data.articles || [];
       setArticles(fetched);
       setCachedArticles(fetched);

@@ -86,6 +86,9 @@ app.use((req, res, next) => {
   next();
 });
 
+// Keep-alive endpoint — pinged by UptimeRobot every 14 min to prevent Render free-tier cold starts
+app.get('/health', (req, res) => res.json({ ok: true }));
+
 // --- MULTER CONFIG (Memory Storage) ---
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -191,37 +194,42 @@ articleRouter.get("/", async (req, res) => {
     const pageSize = parseInt(limit);
     const pageNum = parseInt(page);
     const start = (pageNum - 1) * pageSize;
-    const end = start + pageSize - 1;
-    
-    let query = supabase
-      .from('articles')
-      .select('id, title, slug, category, excerpt, image, author, readTime, createdAt, tags', { count: 'exact' })
-      .eq('status', 'published')
-      .order('createdAt', { ascending: false });
-    
-    if (category && category !== 'All') {
-      query = query.ilike('category', category);
-    }
-    
-    if (tag) {
-      // Assuming tags is an array column. .contains(['tag']) works for arrays.
-      query = query.contains('tags', [tag.toLowerCase()]);
+
+    // Serve from in-memory cache when possible
+    const cacheKey = getArticlesCacheKey(category, tag, pageNum, pageSize);
+    const cached = _articlesCache.get(cacheKey);
+    if (cached && Date.now() - cached.ts < ARTICLES_TTL) {
+      return res.json(cached.data);
     }
 
-    const { data: posts, count, error } = await query.range(start, end);
-    
+    let query = supabase
+      .from('articles')
+      .select('id, title, slug, category, excerpt, image, author, readTime, createdAt, tags')
+      .eq('status', 'published')
+      .order('createdAt', { ascending: false });
+
+    if (category && category !== 'All') query = query.ilike('category', category);
+    if (tag) query = query.contains('tags', [tag.toLowerCase()]);
+
+    // Fetch pageSize+1 to detect if a next page exists — avoids COUNT(*) on every request
+    const { data: posts, error } = await query.range(start, start + pageSize);
     if (error) throw error;
-    
-    res.json({
-      articles: posts || [],
-      totalCount: count,
-      currentPage: pageNum,
-      totalPages: Math.ceil(count / pageSize)
-    });
+
+    const hasMore = posts.length > pageSize;
+    const articles = hasMore ? posts.slice(0, pageSize) : (posts || []);
+    const payload = { articles, hasMore, currentPage: pageNum, totalPages: hasMore ? pageNum + 1 : pageNum };
+
+    _articlesCache.set(cacheKey, { data: payload, ts: Date.now() });
+    res.json(payload);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
+
+const _articlesCache = new Map();
+const ARTICLES_TTL = 5 * 60 * 1000;
+const getArticlesCacheKey = (category, tag, page, limit) =>
+  `${category || 'all'}|${tag || ''}|${page}|${limit}`;
 
 let _tagsCache = null;
 let _tagsCacheTs = 0;
