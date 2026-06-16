@@ -1,6 +1,11 @@
 # NewsForge Robots Protocol
 User-agent: *
 Allow: /
+Disallow: /admin/
 
-# Sitemap Location
+# Sitemaps
 Sitemap: https://newsforge.in/sitemap.xml
+Sitemap: https://newsforge.in/news-sitemap.xml
+
+# RSS Feed
+# https://newsforge.in/feed.xml

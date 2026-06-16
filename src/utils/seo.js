@@ -11,8 +11,19 @@ export const DEFAULT_SEO = {
   type: "website"
 };
 
+export const setCanonical = (url) => {
+  let el = document.querySelector('link[rel="canonical"]');
+  if (!el) {
+    el = document.createElement('link');
+    el.setAttribute('rel', 'canonical');
+    document.head.appendChild(el);
+  }
+  el.setAttribute('href', url || window.location.href);
+};
+
 export const updateSEOMetadata = (options = {}) => {
   const { title, description, image, keywords, type, url } = { ...DEFAULT_SEO, ...options };
+  setCanonical(url);
 
   // 1. Update Document Title
   document.title = title.includes("NewsForge") ? title : `${title} | NewsForge`;
@@ -82,5 +93,36 @@ export const injectArticleJSONLD = (article) => {
   script.id = 'json-ld-article';
   script.type = 'application/ld+json';
   script.text = JSON.stringify(jsonLD);
+  document.head.appendChild(script);
+};
+
+export const injectFAQJSONLD = (markdownContent) => {
+  const existing = document.getElementById('json-ld-faq');
+  if (existing) existing.remove();
+  if (!markdownContent) return;
+
+  const faqSection = markdownContent.match(/##\s+Frequently Asked Questions\s*\n([\s\S]*?)(?=\n##\s|$)/i);
+  if (!faqSection) return;
+
+  const pairs = [];
+  const re = /\*\*Q:\s*(.+?)\*\*\s*\nA:\s*([\s\S]+?)(?=\n\*\*Q:|$)/g;
+  let m;
+  while ((m = re.exec(faqSection[1])) !== null) {
+    pairs.push({ question: m[1].trim(), answer: m[2].trim().replace(/\n+/g, ' ') });
+  }
+  if (pairs.length === 0) return;
+
+  const script = document.createElement('script');
+  script.id = 'json-ld-faq';
+  script.type = 'application/ld+json';
+  script.text = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": pairs.map(({ question, answer }) => ({
+      "@type": "Question",
+      "name": question,
+      "acceptedAnswer": { "@type": "Answer", "text": answer }
+    }))
+  });
   document.head.appendChild(script);
 };

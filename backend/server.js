@@ -11,18 +11,55 @@ const multer = require("multer");
 const sharp = require("sharp");
 
 // --- UTILS & CONSTANTS ---
-const curatedBases = [
-  "1451187580242-4f769806037e", // Modern office / Laptop
-  "1518770665346-f8c7981fb5a6", // Circuit board / High-tech
-  "1504384308090-c894fdcc538d", // Coding / Developer
-  "1519389950473-47ba0277781c", // Team / Business meeting
-  "1460925895917-afdab827c52f", // Dashboard / Growth
-  "1526628953301-3e589a6a8b74", // Abstract futuristic
-  "1550751827-4bd374c3f58b", // Cyber security
-  "1485827404703-89b55fcc595e", // AI / Robotics
-  "1531297484001-80022131f5a1", // Server room
-  "1551288049-bebda4e38f71"  // Data visualization
-];
+const curatedBases = {
+  tech:        "1518770665346-f8c7981fb5a6",
+  finance:     "1460925895917-afdab827c52f",
+  business:    "1519389950473-47ba0277781c",
+  markets:     "1526628953301-3e589a6a8b74",
+  commodities: "1550751827-4bd374c3f58b",
+  default:     "1504384308090-c894fdcc538d",
+};
+
+const axios = require("axios");
+
+async function fetchStockImage(searchQuery, category) {
+  const query = (searchQuery || category || "technology").substring(0, 120);
+
+  if (process.env.UNSPLASH_ACCESS_KEY) {
+    try {
+      const { data } = await axios.get("https://api.unsplash.com/search/photos", {
+        params: { query, orientation: "landscape", per_page: 5, order_by: "relevant" },
+        headers: { Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}` },
+        timeout: 8000,
+      });
+      if (data.results && data.results.length > 0) {
+        const pick = data.results[Math.floor(Math.random() * Math.min(3, data.results.length))];
+        return `${pick.urls.raw}&w=1200&h=800&fit=crop&q=80&auto=format`;
+      }
+    } catch (e) {
+      console.warn("[Image] Unsplash failed:", e.message);
+    }
+  }
+
+  if (process.env.PEXELS_API_KEY) {
+    try {
+      const { data } = await axios.get("https://api.pexels.com/v1/search", {
+        params: { query, per_page: 5, orientation: "landscape" },
+        headers: { Authorization: process.env.PEXELS_API_KEY },
+        timeout: 8000,
+      });
+      if (data.photos && data.photos.length > 0) {
+        return data.photos[0].src.large2x;
+      }
+    } catch (e) {
+      console.warn("[Image] Pexels failed:", e.message);
+    }
+  }
+
+  const catKey = (category || "").toLowerCase();
+  const photoId = curatedBases[catKey] || curatedBases.default;
+  return `https://images.unsplash.com/photo-${photoId}?w=1200&h=800&fit=crop&q=80&auto=format`;
+}
 
 const app = express();
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -50,8 +87,8 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-      "img-src": ["'self'", "data:", "blob:", "https://*.supabase.co", "https://image.pollinations.ai", "https://images.unsplash.com", "https://images.pexels.com"],
-      "connect-src": ["'self'", "https://*.supabase.co", "https://api.pollinations.ai"]
+      "img-src": ["'self'", "data:", "blob:", "https://*.supabase.co", "https://images.unsplash.com", "https://images.pexels.com", "https://image.pollinations.ai"],
+      "connect-src": ["'self'", "https://*.supabase.co", "https://api.unsplash.com", "https://api.pexels.com"]
     }
   }
 }));
@@ -746,6 +783,129 @@ app.get("/sitemap.xml", async (req, res) => {
   }
 });
 
+// RSS 2.0 Feed
+app.get("/feed.xml", async (req, res) => {
+  try {
+    const { data: articles } = await supabase
+      .from('articles')
+      .select('title,slug,category,excerpt,image,author,createdAt')
+      .eq('status', 'published')
+      .order('createdAt', { ascending: false })
+      .limit(30);
+
+    const domain = FRONTEND_URL;
+    const esc = (s) => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const catSlug = (c) => (c || 'news').toLowerCase().replace(/\s+/g, '-');
+
+    const items = (articles || []).map(a => `
+  <item>
+    <title><![CDATA[${a.title}]]></title>
+    <link>${domain}/${catSlug(a.category)}/${a.slug}</link>
+    <guid isPermaLink="true">${domain}/${catSlug(a.category)}/${a.slug}</guid>
+    <description><![CDATA[${a.excerpt || ''}]]></description>
+    <author>editorial@newsforge.in (${esc(a.author)})</author>
+    <category>${esc(a.category)}</category>
+    <pubDate>${new Date(a.createdAt).toUTCString()}</pubDate>
+    <enclosure url="${esc(a.image)}" type="image/jpeg" length="0" />
+  </item>`).join('');
+
+    const feed = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title>NewsForge</title>
+    <link>${domain}</link>
+    <description>In-depth reporting on tech, finance, and global markets.</description>
+    <language>en-us</language>
+    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
+    <atom:link href="${domain}/feed.xml" rel="self" type="application/rss+xml" />
+    <image>
+      <url>${domain}/favicon.png</url>
+      <title>NewsForge</title>
+      <link>${domain}</link>
+    </image>
+    ${items}
+  </channel>
+</rss>`;
+
+    res.header("Content-Type", "application/rss+xml; charset=utf-8");
+    res.header("Cache-Control", "public, max-age=900");
+    res.send(feed);
+  } catch (e) {
+    res.status(500).send({ message: "Feed generation failed" });
+  }
+});
+
+// Google News Sitemap
+app.get("/news-sitemap.xml", async (req, res) => {
+  try {
+    // Google News only surfaces articles < 2 days old, but including up to 7 days
+    // ensures the sitemap is never empty so Google can validate the format.
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: articles } = await supabase
+      .from('articles')
+      .select('title,slug,category,createdAt')
+      .eq('status', 'published')
+      .gte('createdAt', cutoff)
+      .order('createdAt', { ascending: false })
+      .limit(1000);
+
+    const domain = FRONTEND_URL;
+    const esc = (s) => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const catSlug = (c) => (c || 'news').toLowerCase().replace(/\s+/g, '-');
+
+    const urls = (articles || []).map(a => `
+  <url>
+    <loc>${domain}/${catSlug(a.category)}/${a.slug}</loc>
+    <news:news>
+      <news:publication>
+        <news:name>NewsForge</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>${new Date(a.createdAt).toISOString()}</news:publication_date>
+      <news:title><![CDATA[${a.title}]]></news:title>
+    </news:news>
+  </url>`).join('');
+
+    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+  ${urls}
+</urlset>`;
+
+    res.header("Content-Type", "application/xml");
+    res.header("Cache-Control", "public, max-age=300");
+    res.send(sitemap);
+  } catch (e) {
+    res.status(500).send({ message: "News sitemap generation failed" });
+  }
+});
+
+// Trending Topics (proxies Google Trends daily RSS)
+app.get("/api/trending-topics", async (req, res) => {
+  try {
+    const geo = req.query.geo || 'US';
+    const { data: xmlText } = await axios.get(
+      `https://trends.google.com/trends/trendingsearches/daily/rss?geo=${geo}`,
+      { timeout: 6000, headers: { 'Accept': 'application/rss+xml,application/xml' } }
+    );
+
+    const items = xmlText.match(/<item>([\s\S]*?)<\/item>/g) || [];
+    const topics = items.slice(0, 20).map(item => {
+      const titleMatch  = item.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/);
+      const trafficMatch = item.match(/<ht:approx_traffic>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/ht:approx_traffic>/);
+      return {
+        topic:   titleMatch   ? titleMatch[1].trim()   : null,
+        traffic: trafficMatch ? trafficMatch[1].trim() : null,
+      };
+    }).filter(t => t.topic && t.topic.length > 1);
+
+    res.json(topics);
+  } catch (e) {
+    console.warn("[TrendingTopics] Google Trends fetch failed:", e.message);
+    res.json([]);
+  }
+});
+
 // --- AI INTELLIGENCE ---
 const { parseMarkdownToBlocks } = require('./utils/markdownParser');
 const aiOrchestrator = require('./services/aiOrchestrator');
@@ -769,81 +929,79 @@ app.post("/api/blogs/generate", adminAuth, async (req, res) => {
   res.write(": connected\n\n");
 
   const topicClean = topic.trim();
-  const wordTarget = depth === 'deep' ? '1500-2000' : '800-1200';
-  const sectionTarget = depth === 'deep' ? '8-10' : '4-6';
+  const wordTarget = depth === 'deep' ? '2000-2500' : '1300-1700';
+  const sectionTarget = depth === 'deep' ? '7-9' : '5-7';
 
   try {
-    const prompt = `You are a professional SEO blog writer.
+    const prompt = `You are a senior journalist and domain expert with 15+ years of hands-on industry experience. Your work appears in leading publications and is trusted by professionals who make real decisions based on it.
 
-Write a high-quality, human-like blog article.
+Write a substantive, authoritative article that provides GENUINE value — not a surface-level overview, but the kind of insight readers bookmark and share.
 
-INPUT:
-Topic: "${topicClean}"
-${req.body.keywords ? `CONTEXT:\\n- Topic keywords: ${req.body.keywords}` : ''}
-${req.body.keyPoints ? `\\n- Key points: ${req.body.keyPoints}` : ''}
+ASSIGNMENT:
+Topic: “${topicClean}”
+Category: ${requestedCategory || ‘General’}
+Target Length: ${wordTarget} words
+${req.body.keywords ? `Focus Keywords: ${req.body.keywords}` : ‘’}
+${req.body.keyPoints ? `Key Points to Cover: ${req.body.keyPoints}` : ‘’}
 
-REQUIREMENTS:
-- Length: 900–1200 words
-- Tone: clear, authoritative, natural (NOT robotic)
-- Audience: general readers
+━━━ CONTENT REQUIREMENTS ━━━
 
-STRUCTURE:
-1. Hook introduction (engaging, 2–3 paragraphs)
-2. Clear H2 sections (5–7 sections)
-3. Each section must:
-   - explain concept properly
-   - include examples or real-world context
-4. Add bullet points where useful
-5. Add one comparison table if relevant
-6. Add a short conclusion
+OPENING (Non-negotiable):
+- First sentence must be a specific surprising statistic, counterintuitive finding, or bold expert claim
+- Do NOT open with “In today’s...”, with the topic word itself, or with “I”
+- Readers must feel compelled to keep reading after the first sentence
 
-STRICT RULES:
-- No fluff
-- No repetition
-- No generic statements like “in today’s world”
-- No AI-style phrases
-- Content must directly match the topic (no drifting)
+EXPERT AUTHORITY (All required):
+- Include AT LEAST 5 specific numbers, statistics, or percentages throughout the article
+- Reference real companies, products, studies, or events by exact name
+- Write as someone with direct experience, not someone summarising textbooks
+- Include at least one counterintuitive insight that contradicts common assumptions
+- If covering a technical topic, show technical depth with specific terminology used correctly
 
-SEO:
-- Naturally include keywords related to the topic
-- Add a compelling title
-- Add meta description (150–160 chars)
+STRUCTURE (Exactly ${sectionTarget} H2 sections):
+- H2 titles must be specific and compelling — NOT generic (e.g. “Why 83% of Engineers Ignore This Risk” not “Challenges and Limitations”)
+- 2-4 paragraphs per section with concrete examples and real-world context
+- Use bullet or numbered lists only where they genuinely add clarity (not to pad length)
+- Include ONE comparison table if it would help (use | pipe-separated Markdown format)
+- “Key Takeaways” as the second-to-last H2: 5-7 tight, actionable bullet points
+- “Frequently Asked Questions” as the last H2: exactly 4 Q&A pairs targeting real search queries
+  Format: **Q: [question]** then A: [2-3 sentence answer with a specific fact]
+- Final closing section must have a forward-looking title (NOT “Conclusion” or “Final Thoughts”)
+  End with a specific call to action or prediction, not a vague summary
 
-IMAGE PROMPT RULES:
-Create a realistic, high-quality blog illustration.
-Topic: "${topicClean}"
-Style:
-- modern, clean
-- realistic (NOT cartoon unless topic needs)
-- minimal text
-- suitable for blog header
+━━━ BANNED PHRASES — AUTOMATIC FAIL ━━━
+Never write: in today’s world, in today’s digital age, the rise of, the ever-evolving landscape, unlock/unlocking, game-changer/game-changing, dive into/delve into, leverage (as a verb), seamlessly, navigate (metaphorically), it’s crucial, it’s worth noting, needless to say, it’s important to note, moving forward, in conclusion, at the end of the day, this article will, in this article, comprehensive guide, deep dive, paradigm shift, cutting-edge, state-of-the-art, robust (for software), scalable (non-technical use), synergy, holistic approach, streamline, empower, innovative solution, best practices, thought leadership, value proposition, actionable insights, low-hanging fruit, it has been found that, it has been shown
 
-Avoid:
-- random elements
-- unrelated visuals
-- over-stylized AI look
+━━━ TONE & STYLE ━━━
+- Write with confident authority — assert, don’t hedge
+- Use specific numbers: “73% of teams” not “many teams”
+- Short punchy sentences after complex ones (control rhythm)
+- Vary paragraph length: mix 1-sentence and 4-sentence paragraphs
+- Active voice throughout — passive voice is a red flag
+- Never imply you are an AI or that this is generated content
 
-QUALITY CONTROL:
-Check this article for:
-- relevance to topic
-- clarity
-- repetition
-- useless content
+━━━ SEO ━━━
+- Title: specific, keyword-rich, creates genuine curiosity, max 65 characters
+- Meta description: exactly 150-160 characters, includes primary keyword, states the clear benefit
+- Use primary keyword naturally in the opening paragraph
+- Use semantic variations throughout — never repeat the exact keyword phrase more than 3 times
 
-Return:
-- issues
-- improved version if needed. (Your final output inside 'content' must be the improved version)
+━━━ IMAGE SEARCH QUERY ━━━
+image_search_query: 2-3 CONCRETE, LITERAL keywords a photographer would search to find this image
+GOOD examples: “solar panels rooftop”, “server room cables”, “stock chart monitor”, “warehouse robot”
+BAD examples: “digital transformation”, “AI revolution concept”, “future of finance”, “technology innovation”
 
-OUTPUT FORMAT — STRICT:
-Return ONLY a valid JSON object. No markdown. No backticks. No explanation. Nothing before or after the JSON.
-CRITICAL JSON RULE: You MUST escape all newlines as \\n inside the string values. DO NOT output raw line breaks inside the "content" string.
+━━━ OUTPUT FORMAT — STRICT JSON ONLY ━━━
+Return ONLY a valid JSON object. No markdown code fences. No explanation. Nothing before or after the JSON.
+CRITICAL: You MUST escape ALL newlines as \\n inside every string value. Raw line breaks inside strings will break the parser.
 
 {
-  "title": "Your compelling, topic-specific title",
-  "meta_description": "Your 150-160 character meta description",
-  "content": "Full improved article. You MUST use \\n\\n to separate all elements. Note: Provide the text using standard Markdown formatting (e.g., ## for H2, - for bullets) so it seamlessly integrates with our markdown parser.",
-  "image_prompt": "Your realistic, high-quality blog illustration image prompt",
-  "qc_issues": "Brief summary of quality control issues found and fixed"
+  “title”: “Specific title under 65 characters”,
+  “meta_description”: “Exactly 150-160 character meta description with keyword and clear value”,
+  “content”: “Full article in Markdown. Use ## for H2 headers, ### for H3, - for bullet lists, **bold** for key terms, | pipes for tables. Separate ALL blocks with \\n\\n.”,
+  “image_search_query”: “2-3 concrete literal stock photo keywords”,
+  “image_prompt”: “Detailed realistic photograph description for fallback AI image generation”,
+  “tags”: [“tag-one”, “tag-two”, “tag-three”, “tag-four”, “tag-five”]
 }`;
 
     const updateStatus = (msg) => {
@@ -853,15 +1011,19 @@ CRITICAL JSON RULE: You MUST escape all newlines as \\n inside the string values
     const orchestratorResult = await aiOrchestrator.generateContent(prompt, updateStatus, provider);
     
     // If complete failure, still send the fail-safe back to the frontend gracefully
-    const { title, content, image_prompt } = orchestratorResult.data;
+    const { title, content, image_prompt, image_search_query, tags } = orchestratorResult.data;
 
     const date = new Date().toISOString();
     const dateShort = date.split("T")[0];
     const slug = title.toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");
 
-    // Dynamically generate an image using the exact topic/image prompt
-    const imageQuery = image_prompt || topicClean;
-    const dynamicImage = `https://image.pollinations.ai/prompt/${encodeURIComponent(imageQuery)}?width=1200&height=800&nologo=true`;
+    updateStatus("Fetching cover image...");
+    const stockQuery = image_search_query || topicClean;
+    const dynamicImage = await fetchStockImage(stockQuery, requestedCategory);
+
+    const wordCount = content.split(/\s+/).filter(Boolean).length;
+    const readTime = Math.max(3, Math.ceil(wordCount / 200));
+    const articleTags = Array.isArray(tags) && tags.length > 0 ? tags : [];
 
     // Compose full markdown with YAML frontmatter for storage
     const safeTitle = title.replace(/"/g, "'");
@@ -870,9 +1032,9 @@ CRITICAL JSON RULE: You MUST escape all newlines as \\n inside the string values
 title: "${safeTitle}"
 date: "${dateShort}"
 category: "${requestedCategory || "Intelligence"}"
-readTime: "5 min"
+readTime: "${readTime} min"
 image: "${dynamicImage}"
-author: "NewsForge"
+author: "NewsForge Editorial"
 image_prompt: "${safeImagePrompt}"
 ---
 
@@ -894,9 +1056,10 @@ ${content}`;
       content: parseMarkdownToBlocks(content),
       excerpt,
       image: dynamicImage,
-      author: orchestratorResult.success ? "NewsForge AI" : "System Fail-Safe",
+      author: "NewsForge Editorial",
       status: "published",
-      readTime: 5,
+      readTime,
+      tags: articleTags,
       createdAt: date
     }]);
 
@@ -910,10 +1073,10 @@ ${content}`;
     res.write(`data: ${JSON.stringify({
       done: true,
       success: orchestratorResult.success,
-      message: orchestratorResult.success ? "Intelligence node synthesized and published" : "Fail-Safe node published",
+      message: orchestratorResult.success ? "Article synthesized and published" : "Fail-Safe article published",
       slug,
       title,
-      author: orchestratorResult.success ? "NewsForge AI" : "System Fail-Safe",
+      author: "NewsForge Editorial",
       image_prompt,
       provider: orchestratorResult.provider || 'none'
     })}\n\n`);

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Loader2, Link as LinkIcon, CheckCircle, Zap } from 'lucide-react';
+import { Sparkles, Loader2, Link as LinkIcon, CheckCircle, Zap, TrendingUp, RefreshCw } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import API_BASE_URL from '../../config';
 import { useContent } from '../../context/ContentContext';
 import AdminLayout from '../layout/AdminLayout';
@@ -14,7 +15,23 @@ const AIGenerator = () => {
   const [generating, setGenerating] = useState(false);
   const [generationStatus, setGenerationStatus] = useState("");
   const [success, setSuccess] = useState(null);
+  const [trending, setTrending] = useState([]);
+  const [trendingLoading, setTrendingLoading] = useState(false);
   const { refreshArticles } = useContent();
+
+  const fetchTrending = async () => {
+    setTrendingLoading(true);
+    try {
+      const { data } = await axios.get(`${API_BASE_URL}/trending-topics`);
+      setTrending(data.slice(0, 12));
+    } catch {
+      setTrending([]);
+    } finally {
+      setTrendingLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchTrending(); }, []);
 
   const handleGenerate = async () => {
     if (!genTopic || generating) return;
@@ -146,7 +163,47 @@ const AIGenerator = () => {
             </div>
           </div>
 
-          <div className="md:col-span-4">
+          <div className="md:col-span-4 space-y-5">
+            {/* Trending Topics */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-primary" />
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">Trending Now</h3>
+                </div>
+                <button
+                  onClick={fetchTrending}
+                  disabled={trendingLoading}
+                  className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-40"
+                  title="Refresh"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${trendingLoading ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+              {trendingLoading ? (
+                <div className="space-y-2">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="h-7 rounded-full bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                  ))}
+                </div>
+              ) : trending.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {trending.map((t, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setGenTopic(t.topic)}
+                      className="px-3 py-1.5 text-xs rounded-full border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-primary hover:text-primary dark:hover:text-primary transition-colors cursor-pointer bg-slate-50 dark:bg-slate-800 hover:bg-primary/5 text-left"
+                    >
+                      {t.topic}
+                      {t.traffic && <span className="ml-1 text-slate-400 dark:text-slate-500">{t.traffic}</span>}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400 dark:text-slate-500">Could not load trending topics.</p>
+              )}
+            </div>
+
              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 sticky top-24">
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-4">System Output</h3>
                 
