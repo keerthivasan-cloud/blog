@@ -1,0 +1,90 @@
+// Prompt builder - plain ASCII only, no smart quotes
+function buildPrompt(topicClean, category, wordTarget, sectionTarget, keywords, keyPoints) {
+  var lines = [
+    'You are a senior journalist and domain expert with 15+ years of hands-on industry experience.',
+    'Your work appears in leading publications and is trusted by professionals who make real decisions based on it.',
+    '',
+    'Write a substantive, authoritative article that provides GENUINE value - not a surface-level overview,',
+    'but the kind of insight readers bookmark and share.',
+    '',
+    'ASSIGNMENT:',
+    'Topic: ' + topicClean,
+    'Category: ' + (category || 'General'),
+    'Target Length: ' + wordTarget + ' words'
+  ];
+
+  if (keywords) lines.push('Focus Keywords: ' + keywords);
+  if (keyPoints) lines.push('Key Points to Cover: ' + keyPoints);
+
+  lines = lines.concat([
+    '',
+    '=== CONTENT REQUIREMENTS ===',
+    '',
+    'OPENING (Non-negotiable):',
+    '- First sentence must be a specific surprising statistic, counterintuitive finding, or bold expert claim',
+    "- Do NOT open with the phrase 'In today's', with the topic word itself, or with 'I'",
+    '- Readers must feel compelled to keep reading after the first sentence',
+    '',
+    'EXPERT AUTHORITY (All required):',
+    '- Include AT LEAST 5 specific numbers, statistics, or percentages throughout the article',
+    '- Reference real companies, products, studies, or events by exact name',
+    '- Write as someone with direct experience, not someone summarising textbooks',
+    '- Include at least one counterintuitive insight that contradicts common assumptions',
+    '- If covering a technical topic, show technical depth with specific terminology used correctly',
+    '',
+    'STRUCTURE (Exactly ' + sectionTarget + ' H2 sections):',
+    '- H2 titles must be specific and compelling, NOT generic',
+    '- 2-4 paragraphs per section with concrete examples and real-world context',
+    '- Use bullet or numbered lists only where they genuinely add clarity (not to pad length)',
+    '- Include ONE comparison table if it would help (use | pipe-separated Markdown format)',
+    '- "Key Takeaways" as the second-to-last H2: 5-7 tight, actionable bullet points',
+    '- "Frequently Asked Questions" as the last H2: exactly 4 Q&A pairs targeting real search queries',
+    '  Format: **Q: [question]** then A: [2-3 sentence answer with a specific fact]',
+    '- Final closing section must have a forward-looking title (NOT Conclusion or Final Thoughts)',
+    '  End with a specific call to action or prediction, not a vague summary',
+    '',
+    '=== BANNED PHRASES - AUTOMATIC FAIL ===',
+    "Never write: in today's world, in today's digital age, the rise of, unlock/unlocking,",
+    'game-changer, dive into, delve into, leverage (as a verb), seamlessly, it is crucial,',
+    "it's worth noting, needless to say, moving forward, in conclusion, at the end of the day,",
+    'this article will, comprehensive guide, deep dive, paradigm shift, cutting-edge,',
+    'state-of-the-art, synergy, holistic approach, streamline, empower, best practices,',
+    'thought leadership, actionable insights, low-hanging fruit, it has been found that',
+    '',
+    '=== TONE & STYLE ===',
+    '- Write with confident authority, assert, do not hedge',
+    '- Use specific numbers: 73% of teams not "many teams"',
+    '- Short punchy sentences after complex ones (control rhythm)',
+    '- Vary paragraph length: mix 1-sentence and 4-sentence paragraphs',
+    '- Active voice throughout, passive voice is a red flag',
+    '- Never imply you are an AI or that this is generated content',
+    '',
+    '=== SEO ===',
+    '- Title: specific, keyword-rich, creates genuine curiosity, max 65 characters',
+    '- Meta description: exactly 150-160 characters, includes primary keyword, states the clear benefit',
+    '- Use primary keyword naturally in the opening paragraph',
+    '- Use semantic variations throughout, never repeat the exact keyword phrase more than 3 times',
+    '',
+    '=== IMAGE SEARCH QUERY ===',
+    'image_search_query: 2-3 CONCRETE, LITERAL keywords a photographer would search to find this image',
+    'GOOD examples: solar panels rooftop, server room cables, stock chart monitor, warehouse robot',
+    'BAD examples: digital transformation, AI revolution concept, future of finance',
+    '',
+    '=== OUTPUT FORMAT - STRICT JSON ONLY ===',
+    'Return ONLY a valid JSON object. No markdown code fences. No explanation. Nothing before or after the JSON.',
+    'CRITICAL: You MUST escape ALL newlines as \\n inside every string value.',
+    '',
+    '{',
+    '  "title": "Specific title under 65 characters",',
+    '  "meta_description": "150-160 character meta description with keyword and clear value",',
+    '  "content": "Full article in Markdown. Use ## for H2, ### for H3, - for bullets, **bold** for key terms. Separate ALL blocks with \\n\\n.",',
+    '  "image_search_query": "2-3 concrete literal stock photo keywords",',
+    '  "image_prompt": "Detailed realistic photograph description for fallback AI image generation",',
+    '  "tags": ["tag-one", "tag-two", "tag-three", "tag-four", "tag-five"]',
+    '}'
+  ]);
+
+  return lines.join('\n');
+}
+
+module.exports = buildPrompt;
