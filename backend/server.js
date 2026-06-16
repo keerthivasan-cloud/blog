@@ -944,7 +944,7 @@ Target Length: ${wordTarget} words
 ${req.body.keywords ? `Focus Keywords: ${req.body.keywords}` : ‘’}
 ${req.body.keyPoints ? `Key Points to Cover: ${req.body.keyPoints}` : ‘’}
 
-━━━ CONTENT REQUIREMENTS ━━━
+=== CONTENT REQUIREMENTS ===
 
 OPENING (Non-negotiable):
 - First sentence must be a specific surprising statistic, counterintuitive finding, or bold expert claim
@@ -959,7 +959,7 @@ EXPERT AUTHORITY (All required):
 - If covering a technical topic, show technical depth with specific terminology used correctly
 
 STRUCTURE (Exactly ${sectionTarget} H2 sections):
-- H2 titles must be specific and compelling — NOT generic (e.g. “Why 83% of Engineers Ignore This Risk” not “Challenges and Limitations”)
+- H2 titles must be specific and compelling, NOT generic (e.g. “Why 83% of Engineers Ignore This Risk” not “Challenges and Limitations”)
 - 2-4 paragraphs per section with concrete examples and real-world context
 - Use bullet or numbered lists only where they genuinely add clarity (not to pad length)
 - Include ONE comparison table if it would help (use | pipe-separated Markdown format)
@@ -969,29 +969,29 @@ STRUCTURE (Exactly ${sectionTarget} H2 sections):
 - Final closing section must have a forward-looking title (NOT “Conclusion” or “Final Thoughts”)
   End with a specific call to action or prediction, not a vague summary
 
-━━━ BANNED PHRASES — AUTOMATIC FAIL ━━━
+=== BANNED PHRASES - AUTOMATIC FAIL ===
 Never write: in today’s world, in today’s digital age, the rise of, the ever-evolving landscape, unlock/unlocking, game-changer/game-changing, dive into/delve into, leverage (as a verb), seamlessly, navigate (metaphorically), it’s crucial, it’s worth noting, needless to say, it’s important to note, moving forward, in conclusion, at the end of the day, this article will, in this article, comprehensive guide, deep dive, paradigm shift, cutting-edge, state-of-the-art, robust (for software), scalable (non-technical use), synergy, holistic approach, streamline, empower, innovative solution, best practices, thought leadership, value proposition, actionable insights, low-hanging fruit, it has been found that, it has been shown
 
-━━━ TONE & STYLE ━━━
-- Write with confident authority — assert, don’t hedge
+=== TONE & STYLE ===
+- Write with confident authority, assert, do not hedge
 - Use specific numbers: “73% of teams” not “many teams”
 - Short punchy sentences after complex ones (control rhythm)
 - Vary paragraph length: mix 1-sentence and 4-sentence paragraphs
-- Active voice throughout — passive voice is a red flag
+- Active voice throughout, passive voice is a red flag
 - Never imply you are an AI or that this is generated content
 
-━━━ SEO ━━━
+=== SEO ===
 - Title: specific, keyword-rich, creates genuine curiosity, max 65 characters
 - Meta description: exactly 150-160 characters, includes primary keyword, states the clear benefit
 - Use primary keyword naturally in the opening paragraph
-- Use semantic variations throughout — never repeat the exact keyword phrase more than 3 times
+- Use semantic variations throughout, never repeat the exact keyword phrase more than 3 times
 
-━━━ IMAGE SEARCH QUERY ━━━
+=== IMAGE SEARCH QUERY ===
 image_search_query: 2-3 CONCRETE, LITERAL keywords a photographer would search to find this image
 GOOD examples: “solar panels rooftop”, “server room cables”, “stock chart monitor”, “warehouse robot”
 BAD examples: “digital transformation”, “AI revolution concept”, “future of finance”, “technology innovation”
 
-━━━ OUTPUT FORMAT — STRICT JSON ONLY ━━━
+=== OUTPUT FORMAT - STRICT JSON ONLY ===
 Return ONLY a valid JSON object. No markdown code fences. No explanation. Nothing before or after the JSON.
 CRITICAL: You MUST escape ALL newlines as \\n inside every string value. Raw line breaks inside strings will break the parser.
 
