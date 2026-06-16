@@ -12,8 +12,6 @@ import { Link } from 'react-router-dom';
 import API_BASE_URL, { ADMIN_SECRET } from '../../config';
 import { useContent } from '../../context/ContentContext';
 
-const CATEGORIES = ['General News', 'Tech', 'Business', 'Finance', 'Markets', 'Commodities', 'Intelligence'];
-
 /* ─── Markdown file parser ──────────────────────── */
 const parseMdFile = (text) => {
   const clean = text.replace(/^---[\s\S]*?---\n?/, '').trim();
@@ -91,7 +89,7 @@ const TagInput = ({ tags, onChange }) => {
 };
 
 const MarkdownUpload = () => {
-  const { refreshArticles } = useContent();
+  const { refreshArticles, categories } = useContent();
   const [success,     setSuccess]     = useState(null);
   const [stage,       setStage]       = useState('upload'); // upload | edit
   const [isDragging,  setIsDragging]  = useState(false);
@@ -318,7 +316,7 @@ const MarkdownUpload = () => {
                   <label className="block text-xs font-semibold uppercase tracking-wider mb-2 text-slate-500">Category</label>
                   <select value={article.category} onChange={e => setArticle(p => ({ ...p, category: e.target.value }))}
                     className={inputCls + ' cursor-pointer'}>
-                    {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                    {categories.map(c => <option key={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>

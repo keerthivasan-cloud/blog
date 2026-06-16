@@ -1,17 +1,40 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Zap, ArrowLeft, CheckCircle, Loader2, Save,
   Plus, Trash2, Type, AlignLeft, List as ListIcon, Quote,
-  Image as LucideImage, Tag, X
+  Image as LucideImage, Tag, X, Eye, EyeOff
 } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import axios from 'axios';
 import AdminLayout from '../layout/AdminLayout';
 import { Link } from 'react-router-dom';
 import API_BASE_URL, { ADMIN_SECRET } from '../../config';
 import { useContent } from '../../context/ContentContext';
 
-const CATEGORIES = ['General News', 'Tech', 'Business', 'Finance', 'Markets', 'Commodities', 'Intelligence'];
+const blocksToMarkdown = (blocks) => blocks.map(b => {
+  if (b.type === 'paragraph') return b.text;
+  if (b.type === 'heading') return `${'#'.repeat(b.level || 2)} ${b.text}`;
+  if (b.type === 'list') return (b.items || []).filter(Boolean).map(i => `- ${i}`).join('\n');
+  if (b.type === 'quote') return `> ${b.text}`;
+  if (b.type === 'image') return `![${b.alt || ''}](${b.url || ''})`;
+  return '';
+}).join('\n\n');
+
+const renderMarkdownPreview = (md) => {
+  if (!md) return '';
+  return md
+    .replace(/^#{1}\s+(.+)$/gm, '<h1 class="text-3xl font-bold mt-6 mb-4">$1</h1>')
+    .replace(/^#{2}\s+(.+)$/gm, '<h2 class="text-2xl font-bold mt-8 mb-3">$1</h2>')
+    .replace(/^#{3}\s+(.+)$/gm, '<h3 class="text-xl font-semibold mt-6 mb-2">$1</h3>')
+    .replace(/^\>\s+(.+)$/gm, '<blockquote class="border-l-4 border-orange-500 pl-4 italic my-4 text-slate-400">$1</blockquote>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^[-*]\s+(.+)$/gm, '<li class="ml-4 list-disc">$1</li>')
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="rounded-lg my-4 max-w-full" />')
+    .replace(/\n\n/g, '</p><p class="mb-4">')
+    .replace(/^([^<\n].+)$/gm, l => l.startsWith('<') ? l : `<p class="mb-4">${l}</p>`);
+};
 
 const TagInput = ({ tags, onChange }) => {
   const [input, setInput] = useState('');
@@ -44,10 +67,11 @@ const TagInput = ({ tags, onChange }) => {
 };
 
 const ManualWrite = () => {
-  const { refreshArticles } = useContent();
+  const { refreshArticles, categories } = useContent();
   const [success, setSuccess] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   const [article, setArticle] = useState({
     title: '', category: 'General News', readTime: 5, excerpt: '',
@@ -113,8 +137,19 @@ const ManualWrite = () => {
           <Link to="/admin/dashboard" className="inline-flex items-center gap-1.5 text-sm mb-5 no-underline text-slate-500 hover:text-orange-500 transition-colors">
             <ArrowLeft className="w-4 h-4" /> Back to dashboard
           </Link>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Manual Write</h1>
-          <p className="text-sm mt-1 text-slate-500">Compose an article using the block editor.</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Manual Write</h1>
+              <p className="text-sm mt-1 text-slate-500">Compose an article using the block editor.</p>
+            </div>
+            <button
+              onClick={() => setShowPreview(v => !v)}
+              className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border cursor-pointer transition-colors ${showPreview ? 'border-orange-400 text-orange-500 bg-orange-50 dark:bg-orange-500/10' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 bg-transparent hover:border-orange-300'}`}
+            >
+              {showPreview ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              {showPreview ? 'Hide Preview' : 'Preview'}
+            </button>
+          </div>
         </div>
 
         {/* Success */}
@@ -141,6 +176,25 @@ const ManualWrite = () => {
           )}
         </AnimatePresence>
 
+        <AnimatePresence>
+          {showPreview && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.25 }}
+              className="mb-5 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800"
+            >
+              <div className="px-4 py-2 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 flex items-center gap-2">
+                <Eye className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-xs font-medium text-slate-500">Preview</span>
+              </div>
+              <div
+                className="p-6 prose-article max-h-[500px] overflow-y-auto bg-white dark:bg-slate-900"
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdownPreview(`# ${article.title || 'Untitled'}\n\n${blocksToMarkdown(article.content)}`)) }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className="space-y-5">
           {/* Article info */}
           <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
@@ -161,7 +215,7 @@ const ManualWrite = () => {
                   onChange={e => setArticle(p => ({ ...p, category: e.target.value }))}
                   className="w-full px-4 py-3 rounded-xl border text-sm bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white outline-none focus:border-orange-400 transition-colors cursor-pointer"
                 >
-                  {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                  {categories.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
               <div>

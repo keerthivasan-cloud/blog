@@ -17,7 +17,7 @@ const AIGenerator = () => {
   const [success, setSuccess] = useState(null);
   const [trending, setTrending] = useState([]);
   const [trendingLoading, setTrendingLoading] = useState(false);
-  const { refreshArticles } = useContent();
+  const { refreshArticles, categories } = useContent();
 
   const fetchTrending = async () => {
     setTrendingLoading(true);
@@ -116,7 +116,7 @@ const AIGenerator = () => {
                      onChange={(e) => setGenCategory(e.target.value)} 
                      className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-sm outline-none focus:ring-2 focus:ring-primary/20"
                    >
-                     {["Tech", "Finance", "Business", "Markets", "Commodities"].map(c => <option key={c} value={c}>{c}</option>)}
+                     {categories.map(c => <option key={c} value={c}>{c}</option>)}
                    </select>
                  </div>
                  <div className="space-y-2">

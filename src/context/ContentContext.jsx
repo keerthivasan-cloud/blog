@@ -12,6 +12,16 @@ const CACHE_KEY = 'nf_articles_v1';
 export const TAGS_CACHE_KEY = 'nf_trending_tags_v1';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+const CATEGORIES_KEY = 'nf_categories_v1';
+export const DEFAULT_CATEGORIES = ['General News', 'Tech', 'Business', 'Finance', 'Markets', 'Commodities', 'Intelligence'];
+
+const getSavedCategories = () => {
+  try {
+    const raw = localStorage.getItem(CATEGORIES_KEY);
+    return raw ? JSON.parse(raw) : DEFAULT_CATEGORIES;
+  } catch { return DEFAULT_CATEGORIES; }
+};
+
 const getCachedArticles = () => {
   try {
     const raw = sessionStorage.getItem(CACHE_KEY);
@@ -58,6 +68,7 @@ export const ContentProvider = ({ children }) => {
   const [articles, setArticles] = useState(() => getCachedArticles() || []);
   const [lastDeletedId, setLastDeletedId] = useState(null);
   const [user, setUser] = useState(null);
+  const [categories, setCategories] = useState(getSavedCategories);
   const [darkMode, setDarkMode] = useState(false);
   const [marketData, setMarketData] = useState([]);
   const [settings, setSettings] = useState({
@@ -155,20 +166,31 @@ export const ContentProvider = ({ children }) => {
   };
 
   const deleteArticle = async (id) => {
-    try {
-      await axios.delete(`${API_BASE_URL}/articles/${id}`, {
-        headers: { Authorization: `Bearer ${ADMIN_SECRET}` }
-      });
-      setArticles(prev => {
-        const remaining = prev.filter(a => String(a.id || a._id) !== String(id));
-        if (remaining.length === 0) sessionStorage.removeItem(CACHE_KEY);
-        return remaining;
-      });
-      setLastDeletedId(id); // Global Signal
-      sessionStorage.removeItem(CACHE_KEY);
-    } catch (error) {
-      console.error("Archive Purge Failure", error);
-    }
+    await axios.delete(`${API_BASE_URL}/articles/${id}`, {
+      headers: { Authorization: `Bearer ${ADMIN_SECRET}` }
+    });
+    setArticles(prev => {
+      const remaining = prev.filter(a => String(a.id || a._id) !== String(id));
+      if (remaining.length === 0) sessionStorage.removeItem(CACHE_KEY);
+      return remaining;
+    });
+    setLastDeletedId(id);
+    sessionStorage.removeItem(CACHE_KEY);
+  };
+
+  const addCategory = (name) => {
+    const trimmed = name.trim();
+    if (!trimmed || categories.includes(trimmed)) return;
+    const updated = [...categories, trimmed];
+    setCategories(updated);
+    localStorage.setItem(CATEGORIES_KEY, JSON.stringify(updated));
+  };
+
+  const removeCategory = (name) => {
+    if (DEFAULT_CATEGORIES.includes(name)) return; // protect defaults
+    const updated = categories.filter(c => c !== name);
+    setCategories(updated);
+    localStorage.setItem(CATEGORIES_KEY, JSON.stringify(updated));
   };
 
   const login = (username, password) => {
@@ -199,6 +221,9 @@ export const ContentProvider = ({ children }) => {
       toggleTheme,
       marketData,
       settings,
+      categories,
+      addCategory,
+      removeCategory,
       refreshSettings: async () => {
         const res = await axios.get(`${API_BASE_URL}/settings`);
         if (res.data) setSettings(res.data);
